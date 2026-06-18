@@ -1,1 +1,120 @@
-/* You can add global styles to this file, and also import other style files */
+/* Import flatpickr theme */
+@import "flatpickr/dist/flatpickr.css";
+
+/* Global styles */
+* {
+    color: #ffffff;
+    background: transparent;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+}
+
+/* Flatpickr Custom Dark Theme overrides */
+.flatpickr-calendar {
+    background: #0f172a !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+    color: #f8fafc !important;
+}
+
+.flatpickr-calendar * {
+    background: transparent;
+    color: #f8fafc;
+}
+
+/* Header style override */
+.flatpickr-months .flatpickr-month,
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    color: #f8fafc !important;
+    fill: #f8fafc !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+    color: #60a5fa !important;
+}
+
+.flatpickr-current-month .numInputWrapper span.arrowUp:after {
+    border-bottom-color: #f8fafc !important;
+}
+
+.flatpickr-current-month .numInputWrapper span.arrowDown:after {
+    border-top-color: #f8fafc !important;
+}
+
+/* Month dropdown selection */
+.flatpickr-current-month select.flatpickr-monthDropdown-months {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    font-weight: 600;
+}
+
+.flatpickr-current-month select.flatpickr-monthDropdown-months option {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+}
+
+/* Year input */
+.flatpickr-current-month input.cur-year {
+    color: #f8fafc !important;
+}
+
+/* Weekdays styling */
+span.flatpickr-weekday {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+}
+
+/* Days elements */
+.flatpickr-day {
+    color: #f8fafc !important;
+    border-radius: 6px !important;
+    border: 1px solid transparent !important;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+    background: rgba(148, 163, 184, 0.1) !important;
+    color: #f8fafc !important;
+}
+
+.flatpickr-day.today {
+    border-color: #3b82f6 !important;
+    color: #60a5fa !important;
+}
+
+.flatpickr-day.selected {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3) !important;
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: #4b5563 !important;
+}
+
+.flatpickr-day.disabled {
+    color: #374151 !important;
+}
+
+/* Style the newly created flatpickr altInput text field */
+input.flatpickr-custom-input {
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
+    background: #090d16 !important;
+    color: #f8fafc !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s ease !important;
+    outline: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+input.flatpickr-custom-input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+    background-color: #0f172a !important;
+}

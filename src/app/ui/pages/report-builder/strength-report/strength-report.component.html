@@ -1,0 +1,131 @@
+<div class="report-page">
+    <div class="report-form-panel">
+        <div class="panel-header">
+            <h2>Nhập liệu báo cáo</h2>
+            <p>Điền thông tin chung và các dòng sản phẩm.</p>
+        </div>
+
+        <form class="report-form" (ngSubmit)="onSave()">
+            <div class="form-group">
+                <label>Template</label>
+                <input [(ngModel)]="report.template" name="template" />
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                <input [(ngModel)]="report.title" name="title" />
+            </div>
+            <div class="form-row two-columns">
+                <div class="form-group">
+                    <label>Warehouse</label>
+                    <input [(ngModel)]="report.data.warehouse" name="warehouse" />
+                </div>
+                <div class="form-group">
+                    <label>Manager</label>
+                    <input [(ngModel)]="report.data.manager" name="manager" />
+                </div>
+            </div>
+            <div class="form-row two-columns">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="text" appFlatpickr [(ngModel)]="report.data.date" name="date" />
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input [(ngModel)]="report.data.notes" name="notes" />
+                </div>
+            </div>
+
+            <div class="table-panel">
+                <div class="table-header">
+                    <h3>Chi tiết sản phẩm</h3>
+                    <button type="button" class="btn-secondary" (click)="addRow()">Thêm hàng</button>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of report.data.items; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td><input [(ngModel)]="item.product" name="product-{{ i }}" /></td>
+                                <td><input type="number" [(ngModel)]="item.quantity" name="quantity-{{ i }}"
+                                        (ngModelChange)="updateItemTotal(item)" /></td>
+                                <td><input type="number" [(ngModel)]="item.price" name="price-{{ i }}"
+                                        (ngModelChange)="updateItemTotal(item)" /></td>
+                                <td>{{ item.total | number: '1.0-2' }}</td>
+                                <td><button type="button" class="btn-danger" (click)="removeRow(i)">Xóa</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="submit-row">
+                <button type="submit" class="btn-primary" [disabled]="saving">Lưu</button>
+                <span class="status-text">{{ message }}</span>
+            </div>
+        </form>
+    </div>
+
+    <div class="report-preview-panel" *ngIf="selectedReport">
+        <div class="panel-header">
+            <h2>Preview báo cáo</h2>
+            <button class="btn-primary" type="button" (click)="onExport(selectedReport)">Xuất Excel</button>
+        </div>
+
+        <div class="report-preview">
+            <h3>{{ selectedReport.title }}</h3>
+            <div class="preview-meta">
+                <p><strong>Template:</strong> {{ selectedReport.template }}</p>
+                <p><strong>Warehouse:</strong> {{ selectedReport.data.warehouse }}</p>
+                <p><strong>Manager:</strong> {{ selectedReport.data.manager }}</p>
+                <p><strong>Date:</strong> {{ selectedReport.data.date }}</p>
+                <p><strong>Notes:</strong> {{ selectedReport.data.notes }}</p>
+            </div>
+
+            <table class="preview-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Giá</th>
+                        <th>Tổng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of selectedReport.data.items; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item.product }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.price | number: '1.0-2' }}</td>
+                        <td>{{ item.total | number: '1.0-2' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="preview-summary">
+                <div>Tổng cộng</div>
+                <div>{{ selectedReportTotal | number: '1.0-2' }}</div>
+            </div>
+        </div>
+
+        <div class="saved-list">
+            <h4>Danh sách báo cáo</h4>
+            <ul>
+                <li *ngFor="let report of savedReports">
+                    <button type="button" class="link-button" (click)="setPreview(report)">#{{ report.id }} - {{
+                        report.title }}</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

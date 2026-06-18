@@ -1,0 +1,427 @@
+<div class="warehouse-issues-container">
+    <!-- Feedback Message -->
+    <div class="feedback-toast" *ngIf="message" [ngClass]="messageType">
+        {{ message }}
+    </div>
+
+    <!-- Header Section -->
+    <div class="page-header">
+        <h1>Tạo Phiếu Xuất Kho</h1>
+    </div>
+
+    <!-- General Info Form -->
+    <div class="form-section glass-panel">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Số chứng từ</label>
+                <input type="text" [(ngModel)]="issueNumber" placeholder="<<Tự động>>">
+            </div>
+            <div class="form-group">
+                <label>Ngày hạch toán</label>
+                <input type="text" appFlatpickr [(ngModel)]="postingDate">
+            </div>
+            <div class="form-group">
+                <label>Trạng thái duyệt</label>
+                <select [(ngModel)]="status">
+                    <option value="1. Chờ duyệt">1. Chờ duyệt</option>
+                    <option value="2. Phê duyệt">2. Phê duyệt</option>
+                    <option value="3. Từ chối">3. Từ chối</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Số hóa đơn</label>
+                <input type="text" [(ngModel)]="invoiceNumber" placeholder="Nhập số hóa đơn">
+            </div>
+            <div class="form-group">
+                <label>Ngày hóa đơn</label>
+                <input type="text" appFlatpickr [(ngModel)]="invoiceDate">
+            </div>
+            <div class="form-group">
+                <label>Nội dung / Diễn giải</label>
+                <input type="text" [(ngModel)]="description" placeholder="Nhập nội dung xuất kho">
+            </div>
+        </div>
+
+        <hr class="form-divider">
+
+        <div class="form-grid secondary-grid">
+            <div class="form-group">
+                <label>Người nhận hàng</label>
+                <input type="text" [(ngModel)]="receiverName" placeholder="Họ và tên người nhận">
+            </div>
+            <div class="form-group">
+                <label>Địa chỉ (bộ phận)</label>
+                <input type="text" [(ngModel)]="department" placeholder="Địa chỉ / Bộ phận">
+            </div>
+            <div class="form-group">
+                <label>Lý do xuất kho</label>
+                <input type="text" [(ngModel)]="reason" placeholder="Lý do">
+            </div>
+            <div class="form-group">
+                <label>Xuất tại kho (ngăn lô)</label>
+                <input type="text" [(ngModel)]="warehouseLocation" placeholder="Kho xuất">
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Grid Section -->
+    <div class="grid-section glass-panel">
+        <div class="grid-header-actions">
+            <h3>Danh mục vật tư thực xuất</h3>
+            <span class="info-text">* Gõ mã vật tư để tự động điền tên, ĐVT và kho hàng</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="issue-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">X</th>
+                        <th style="width: 120px;">Kho hàng</th>
+                        <th style="width: 120px;">Mã vật tư</th>
+                        <th style="width: 250px;">Tên vật tư</th>
+                        <th style="width: 80px;">ĐVT</th>
+                        <th style="width: 100px;">Lượng tồn</th>
+                        <th style="width: 100px;">SL Yêu cầu</th>
+                        <th style="width: 100px;">SL Thực xuất</th>
+                        <th style="width: 120px;">Đơn giá TT</th>
+                        <th style="width: 140px;">Thành tiền TT</th>
+                        <th style="width: 140px;">Thành phẩm</th>
+                        <th style="width: 180px;">Diễn giải</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of items; let i = index">
+                        <td class="center-align">
+                            <button class="btn-remove-row" (click)="removeGridItem(i)" title="Xoá dòng">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="item.warehouse" placeholder="Kho">
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="item.materialCode" (ngModelChange)="onMaterialCodeChange(i)"
+                                placeholder="Mã VT" class="code-input">
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="item.materialName" placeholder="Tên vật tư">
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="item.unit" placeholder="ĐVT">
+                        </td>
+                        <td>
+                            <input type="number" [(ngModel)]="item.stockQty" class="number-input">
+                        </td>
+                        <td>
+                            <input type="number" [(ngModel)]="item.quantityReq" class="number-input">
+                        </td>
+                        <td>
+                            <input type="number" [(ngModel)]="item.quantityReal" (ngModelChange)="calculateAmounts(i)"
+                                class="number-input">
+                        </td>
+                        <td>
+                            <input type="number" [(ngModel)]="item.price" (ngModelChange)="calculateAmounts(i)"
+                                class="number-input">
+                        </td>
+                        <td class="computed-cell">
+                            {{ (item.amount | number:'1.0-2') || 0 }}
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="item.finishedProduct" placeholder="Thành phẩm">
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="item.notes" placeholder="Diễn giải">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals summary -->
+        <div class="grid-summary-bar">
+            <div class="summary-left">
+                <span class="summary-label">Tổng thực xuất:</span>
+                <span class="summary-value">{{ getTotalQuantityReal() | number }}</span>
+                <span class="summary-unit">Vật tư</span>
+            </div>
+            <div class="summary-right">
+                <span class="summary-label">Tổng tiền thanh toán:</span>
+                <span class="summary-amount">{{ getTotalAmount() | number:'1.0-0' }} đ</span>
+            </div>
+        </div>
+
+        <div class="amount-in-words-box" *ngIf="getTotalAmount() > 0">
+            <strong>Bằng chữ: </strong> <span class="words-text">{{ getAmountInWords() }}</span>
+        </div>
+    </div>
+
+    <!-- Action Buttons Toolbar -->
+    <div class="action-toolbar glass-panel">
+        <button class="btn btn-secondary" (click)="onSearchClick()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Tìm kiếm
+        </button>
+        <button class="btn btn-secondary" (click)="onAddNew()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm mới
+        </button>
+        <button class="btn btn-danger" (click)="onDeleteClick()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            Xoá phiếu
+        </button>
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-primary" (click)="onSave()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Lưu phiếu
+        </button>
+        <button class="btn btn-success" (click)="onExportExcel()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Xuất Excel
+        </button>
+        <button class="btn btn-info" (click)="onPrintClick()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <rect x="6" y="18" width="12" height="6"></rect>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            </svg>
+            In Phiếu
+        </button>
+    </div>
+
+    <!-- Dialog: Delete Confirmation -->
+    <div class="modal-backdrop" *ngIf="showDeleteConfirm">
+        <div class="confirm-modal glass-panel">
+            <div class="modal-header">
+                <h2>Xác nhận xoá</h2>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xoá Phiếu xuất kho số <strong>{{ issueNumber }}</strong> không? Hành động này
+                    sẽ xoá vĩnh viễn dữ liệu khỏi cơ sở dữ liệu.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="cancelDelete()">Huỷ bỏ</button>
+                <button class="btn btn-danger" (click)="confirmDelete()">Đồng ý xoá</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog: Search Issues List -->
+    <div class="modal-backdrop" *ngIf="showSearchModal">
+        <div class="search-modal glass-panel">
+            <div class="modal-header">
+                <h2>Danh sách Phiếu Xuất Kho đã lưu</h2>
+                <button class="btn-close" (click)="closeSearchModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-filter-box">
+                    <span class="info-text">Chọn một phiếu xuất kho trong danh sách dưới đây để tải dữ liệu lên biểu mẫu:</span>
+                </div>
+                <div class="table-responsive search-table-box">
+                    <table class="search-list-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">STT</th>
+                                <th style="width: 150px;">Số chứng từ</th>
+                                <th style="width: 140px;">Ngày xuất</th>
+                                <th>Nội dung / Diễn giải</th>
+                                <th style="width: 120px;">Trạng thái</th>
+                                <th style="width: 100px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let i of issues; let idx = index">
+                                <td class="center-align">{{ idx + 1 }}</td>
+                                <td><strong>{{ i.issueNumber }}</strong></td>
+                                <td>{{ i.postingDate | date:'dd/MM/yyyy' }}</td>
+                                <td>{{ i.description }}</td>
+                                <td><span class="status-badge small">{{ i.status }}</span></td>
+                                <td class="center-align">
+                                    <button class="btn btn-primary btn-xs" (click)="selectIssue(i)">Chọn</button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="issues.length === 0">
+                                <td colspan="6" class="center-align text-muted" style="padding: 2rem;">Chưa có phiếu xuất kho nào được lưu trong cơ sở dữ liệu.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeSearchModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog: Print Preview (Paper Form Styling) -->
+    <div class="modal-backdrop print-preview-backdrop" *ngIf="showPrintPreview">
+        <div class="print-preview-modal glass-panel">
+            <!-- Non-printable top bar -->
+            <div class="preview-actions-bar">
+                <h2>Bản xem trước in ấn (A4)</h2>
+                <div class="bar-buttons">
+                    <button class="btn btn-info" (click)="triggerPrint()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <rect x="6" y="18" width="12" height="6"></rect>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        </svg>
+                        In Phiếu
+                    </button>
+                    <button class="btn btn-secondary" (click)="closePrintPreview()">Đóng bản xem</button>
+                </div>
+            </div>
+
+            <!-- Printable Paper Sheet -->
+            <div class="print-paper-sheet" id="printable-area">
+                <div class="paper-header">
+                    <div class="header-left">
+                        <div class="org-name">BAN CHỈ HUY HẬU CẦN</div>
+                        <div class="dept-name">BỘ PHẬN Y TẾ</div>
+                    </div>
+                    <div class="header-right">
+                        <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                        <div class="slogan">Độc lập - Tự do - Hạnh phúc</div>
+                        <div class="dots">---------------</div>
+                    </div>
+                </div>
+
+                <div class="paper-title-block">
+                    <h1>PHIẾU XUẤT KHO</h1>
+                    <div class="paper-date">
+                        Nguyên ngày hạch toán: {{ postingDate | date:'dd/MM/yyyy' }}
+                    </div>
+                    <div class="paper-doc-number">
+                        Số: <strong>{{ issueNumber }}</strong>
+                    </div>
+                </div>
+
+                <div class="paper-meta-info">
+                    <div class="info-row">
+                        <span class="info-label">Họ và tên người nhận hàng:</span>
+                        <span class="info-value">{{ receiverName }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Địa chỉ (bộ phận):</span>
+                        <span class="info-value">{{ department }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Lý do xuất kho:</span>
+                        <span class="info-value">{{ reason }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Xuất tại kho (ngăn lô):</span>
+                        <span class="info-value">{{ warehouseLocation }}</span>
+                    </div>
+                </div>
+
+                <div class="paper-grid-container">
+                    <table class="paper-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;" rowspan="2">Stt</th>
+                                <th style="width: 80px;" rowspan="2">Mã số</th>
+                                <th rowspan="2">Tên, nhãn hiệu, quy cách, phẩm chất vật tư</th>
+                                <th style="width: 60px;" rowspan="2">ĐVT</th>
+                                <th colspan="2">Số lượng</th>
+                                <th style="width: 100px;" rowspan="2">Đơn giá</th>
+                                <th style="width: 120px;" rowspan="2">Thành tiền</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 80px;">Yêu cầu</th>
+                                <th style="width: 80px;">Thực xuất</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filter empty items for clean print -->
+                            <tr *ngFor="let item of items; let idx = index">
+                                <ng-container *ngIf="item.materialCode.trim() !== ''">
+                                    <td class="center-align">{{ idx + 1 }}</td>
+                                    <td class="center-align">{{ item.materialCode }}</td>
+                                    <td>{{ item.materialName }}</td>
+                                    <td class="center-align">{{ item.unit }}</td>
+                                    <td class="right-align">{{ item.quantityReq | number }}</td>
+                                    <td class="right-align">{{ item.quantityReal | number }}</td>
+                                    <td class="right-align">{{ item.price | number:'1.0-0' }}</td>
+                                    <td class="right-align">{{ item.amount | number:'1.0-0' }}</td>
+                                </ng-container>
+                            </tr>
+                            <!-- Totals Row -->
+                            <tr class="totals-row">
+                                <td colspan="4" class="center-align font-bold">Cộng</td>
+                                <td class="right-align font-bold">{{ getTotalQuantityReq() | number }}</td>
+                                <td class="right-align font-bold">{{ getTotalQuantityReal() | number }}</td>
+                                <td></td>
+                                <td class="right-align font-bold">{{ getTotalAmount() | number:'1.0-0' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="paper-amount-words">
+                    <strong>Tổng số tiền (viết bằng chữ): </strong> <span class="words-text italic">{{ getAmountInWords() }}</span>
+                </div>
+
+                <div class="paper-footer">
+                    <div class="signature-date">
+                        Hà Nội, ngày {{ postingDate | date:'dd' }} tháng {{ postingDate | date:'MM' }} năm {{ postingDate | date:'yyyy' }}
+                    </div>
+                    <div class="signatures-grid">
+                        <div class="signature-column">
+                            <span class="role">Người lập phiếu</span>
+                            <span class="sign-desc">(Ký, họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">Người nhận hàng</span>
+                            <span class="sign-desc">(Ký, họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">Thủ kho</span>
+                            <span class="sign-desc">(Ký, họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">Kế toán trưởng</span>
+                            <span class="sign-desc">(Ký, họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">Giám đốc / Thủ trưởng</span>
+                            <span class="sign-desc">(Ký, họ tên)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

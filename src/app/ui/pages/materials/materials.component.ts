@@ -1,0 +1,299 @@
+import { Component, OnInit } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { invoke } from "@tauri-apps/api/core";
+
+interface MaterialForm {
+    code: string;
+    barcode: string;
+    name: string;
+    parentCode: string;
+    parentName: string;
+    unit: string;
+    currency: string;
+    warehouse: string;
+    valuationMethod: string;
+    features: string;
+    taxable: string;
+    mrpMps: boolean;
+    calculateInventory: boolean;
+    startDate: string;
+    endDate: string;
+    imageData: string; // Base64 string of image
+}
+
+interface SavedMaterial {
+    id: number;
+    code: string;
+    barcode: string;
+    name: string;
+    parentCode: string;
+    parentName: string;
+    unit: string;
+    currency: string;
+    warehouse: string;
+    valuationMethod: string;
+    features: string;
+    taxable: string;
+    mrpMps: number;
+    calculateInventory: number;
+    startDate: string;
+    endDate: string;
+    imageData: string;
+    createdAt: string;
+}
+
+interface SavedSupply {
+    id: number;
+    code: string;
+    name: string;
+}
+
+import { FlatpickrDirective } from "../../../utils/flatpickr.directive";
+
+@Component({
+    standalone: true,
+    selector: "app-materials",
+    imports: [CommonModule, FormsModule, FlatpickrDirective],
+    templateUrl: "./materials.component.html",
+    styleUrls: ["./materials.component.css"],
+})
+export class MaterialsComponent implements OnInit {
+    materials: SavedMaterial[] = [];
+    supplies: SavedSupply[] = [];
+    selectedMaterialId: number | null = null;
+    showDeleteConfirm = false;
+    deletingMaterial: SavedMaterial | null = null;
+    message = "";
+    messageType: "success" | "error" = "success";
+    
+    // Preset options
+    units = ["Kg", "Cái", "Hộp", "Thùng", "Lít", "Mét"];
+    currencies = ["đồng", "USD", "EUR"];
+    valuationMethods = ["Bình quân cuối kỳ", "FIFO", "LIFO", "Đích danh"];
+    
+    materialForm: MaterialForm = this.emptyForm();
+
+    ngOnInit(): void {
+        this.loadMaterials();
+        this.loadSupplies();
+    }
+
+    emptyForm(): MaterialForm {
+        return {
+            code: "",
+            barcode: "",
+            name: "",
+            parentCode: "",
+            parentName: "",
+            unit: "Kg",
+            currency: "đồng",
+            warehouse: "",
+            valuationMethod: "Bình quân cuối kỳ",
+            features: "",
+            taxable: "",
+            mrpMps: false,
+            calculateInventory: true, // Always true
+            startDate: "",
+            endDate: "",
+            imageData: "",
+        };
+    }
+
+    async loadMaterials(): Promise<void> {
+        try {
+            const result = await invoke<SavedMaterial[]>("list_materials");
+            this.materials = result.map(m => ({
+                ...m,
+                parentCode: m.parentCode ?? (m as any).parent_code,
+                parentName: m.parentName ?? (m as any).parent_name,
+                valuationMethod: m.valuationMethod ?? (m as any).valuation_method,
+                calculateInventory: m.calculateInventory ?? (m as any).calculate_inventory,
+                startDate: m.startDate ?? (m as any).start_date,
+                endDate: m.endDate ?? (m as any).end_date,
+                imageData: m.imageData ?? (m as any).image_data,
+                mrpMps: m.mrpMps ?? (m as any).mrp_mps,
+            }));
+            this.materials.sort((a, b) => a.id - b.id);
+        } catch (error) {
+            this.showFeedback("Không thể tải danh sách vật tư.", "error");
+            console.error(error);
+        }
+    }
+
+    async loadSupplies(): Promise<void> {
+        try {
+            const result = await invoke<any[]>("list_supplies");
+            this.supplies = result.map(s => ({
+                id: s.id,
+                code: s.code,
+                name: s.name
+            }));
+            if (this.supplies.length > 0 && !this.materialForm.warehouse) {
+                this.materialForm.warehouse = this.supplies[0].code;
+            }
+        } catch (error) {
+            console.error("Không thể tải danh mục kho:", error);
+        }
+    }
+
+    showFeedback(msg: string, type: "success" | "error" = "success") {
+        this.message = msg;
+        this.messageType = type;
+        setTimeout(() => {
+            this.message = "";
+        }, 3000);
+    }
+
+    onAddNew(): void {
+        this.selectedMaterialId = null;
+        this.materialForm = this.emptyForm();
+        if (this.supplies.length > 0) {
+            this.materialForm.warehouse = this.supplies[0].code;
+        }
+        this.showFeedback("Biểu mẫu đã được làm mới để thêm vật tư.");
+    }
+
+    onSelectMaterial(material: SavedMaterial): void {
+        this.selectedMaterialId = material.id;
+        this.materialForm = {
+            code: material.code,
+            barcode: material.barcode,
+            name: material.name,
+            parentCode: material.parentCode,
+            parentName: material.parentName,
+            unit: material.unit,
+            currency: material.currency,
+            warehouse: material.warehouse,
+            valuationMethod: material.valuationMethod,
+            features: material.features,
+            taxable: material.taxable,
+            mrpMps: !!material.mrpMps,
+            calculateInventory: true, // Always true
+            startDate: material.startDate,
+            endDate: material.endDate,
+            imageData: material.imageData,
+        };
+    }
+
+    async onSave(): Promise<void> {
+        const code = this.materialForm.code.trim();
+        const name = this.materialForm.name.trim();
+        if (!code || !name) {
+            this.showFeedback("Mã và Tên vật tư bắt buộc phải nhập.", "error");
+            return;
+        }
+
+        const payload = {
+            code,
+            barcode: this.materialForm.barcode.trim() || code, // fallback to code if empty
+            name,
+            parentCode: this.materialForm.parentCode.trim(),
+            parentName: this.materialForm.parentName.trim(),
+            unit: this.materialForm.unit,
+            currency: this.materialForm.currency,
+            warehouse: this.materialForm.warehouse,
+            valuationMethod: this.materialForm.valuationMethod,
+            features: this.materialForm.features.trim(),
+            taxable: this.materialForm.taxable.trim(),
+            mrpMps: this.materialForm.mrpMps ? 1 : 0,
+            calculateInventory: 1, // always true
+            startDate: this.materialForm.startDate,
+            endDate: this.materialForm.endDate,
+            imageData: this.materialForm.imageData,
+        };
+
+        try {
+            if (this.selectedMaterialId != null) {
+                await invoke("update_material", {
+                    id: this.selectedMaterialId,
+                    material: payload,
+                });
+                this.showFeedback("Vật tư đã được cập nhật thành công.");
+            } else {
+                await invoke("save_material", {
+                    material: payload,
+                });
+                this.showFeedback("Thêm vật tư mới thành công.");
+            }
+            await this.loadMaterials();
+            this.onAddNew();
+        } catch (error) {
+            this.showFeedback("Lỗi khi lưu dữ liệu vật tư.", "error");
+            console.error(error);
+        }
+    }
+
+    onDelete(material: SavedMaterial): void {
+        this.deletingMaterial = material;
+        this.showDeleteConfirm = true;
+    }
+
+    async confirmDelete(): Promise<void> {
+        if (!this.deletingMaterial) return;
+
+        try {
+            await invoke("delete_material", { id: this.deletingMaterial.id });
+            this.showFeedback(`Đã xóa vật tư "${this.deletingMaterial.name}".`);
+            this.showDeleteConfirm = false;
+            this.deletingMaterial = null;
+            await this.loadMaterials();
+            this.onAddNew();
+        } catch (error) {
+            this.showFeedback("Lỗi khi xóa vật tư.", "error");
+            console.error(error);
+        }
+    }
+
+    cancelDelete(): void {
+        this.showDeleteConfirm = false;
+        this.deletingMaterial = null;
+    }
+
+    onTriggerImageUpload(fileInput: HTMLInputElement): void {
+        fileInput.click();
+    }
+
+    onImageSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.materialForm.imageData = e.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    onRemoveImage(): void {
+        this.materialForm.imageData = "";
+    }
+
+    async onPrint(): Promise<void> {
+        console.log("In danh sách vật tư...");
+        this.showFeedback("Đang khởi tạo lệnh in...");
+        
+        try {
+            // Stub function for printer connection library integration
+            this.printerIntegrationStub();
+            
+            // Backup/Default option: native browser printing
+            window.print();
+        } catch (err) {
+            console.error("Lỗi khi in:", err);
+            this.showFeedback("Lỗi khi kết nối máy in.", "error");
+        }
+    }
+
+    private printerIntegrationStub(): void {
+        // Tương lai sẽ tích hợp thư viện tauri-plugin-printer-v2
+        // Ví dụ:
+        // import { printPdf, getPrinters } from 'tauri-plugin-printer-v2';
+        // const printers = await getPrinters();
+        // if (printers.length > 0) {
+        //   await printPdf({ path: '...', printer: printers[0].name });
+        // }
+        console.log("[PRINTER STUB] Kết nối máy in tauri-plugin-printer-v2 hoạt động.");
+    }
+}

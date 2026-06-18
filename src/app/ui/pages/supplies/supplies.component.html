@@ -1,0 +1,98 @@
+<div class="supplies-page">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Danh mục kho</p>
+            <h2>{{ title }}</h2>
+        </div>
+        <div class="action-bar">
+            <button type="button" (click)="onAddNew()">Thêm</button>
+            <button type="button" class="primary" (click)="onSave()">Lưu</button>
+        </div>
+    </header>
+
+    <section class="supply-panel">
+        <div class="form-grid">
+            <label>
+                Mã
+                <input name="code" [(ngModel)]="supplyForm.code" placeholder="Mã kho" />
+            </label>
+            <label>
+                Tên
+                <input name="name" [(ngModel)]="supplyForm.name" placeholder="Tên kho" />
+            </label>
+            <label>
+                Kho cha
+                <input name="parentWarehouse" [(ngModel)]="supplyForm.parentWarehouse" placeholder="Kho cha" />
+            </label>
+            <label>
+                Từ ngày
+                <input name="startDate" type="text" appFlatpickr [(ngModel)]="supplyForm.startDate" />
+            </label>
+            <label>
+                Đến ngày
+                <input name="endDate" type="text" appFlatpickr [(ngModel)]="supplyForm.endDate" />
+            </label>
+            <label>
+                Người quản lý
+                <input name="manager" [(ngModel)]="supplyForm.manager" placeholder="Người quản lý"
+                    (click)="openEmployeeModal()" />
+            </label>
+            <label class="full-width">
+                Vị trí
+                <input name="location" [(ngModel)]="supplyForm.location" placeholder="Vị trí" />
+            </label>
+        </div>
+    </section>
+
+    <section class="list-panel">
+        <div class="table-header">
+            <h3>Danh sách kho</h3>
+            <span class="message">{{ message }}</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Mã</th>
+                    <th>Tên</th>
+                    <th>Kho cha</th>
+                    <th>Từ ngày</th>
+                    <th>Đến ngày</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let supply of supplies; let i = index" (click)="onSelectSupply(supply)"
+                    [class.selected]="supply.id === selectedSupplyId">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ supply.code }}</td>
+                    <td>{{ supply.name }}</td>
+                    <td>{{ supply.parentWarehouse }}</td>
+                    <td>{{ supply.startDate }}</td>
+                    <td>{{ supply.endDate }}</td>
+                    <td>
+                        <button type="button" class="danger"
+                            (click)="onDelete(supply); $event.stopPropagation()">Xóa</button>
+                    </td>
+                </tr>
+                <tr *ngIf="supplies.length === 0">
+                    <td colspan="7" class="empty">Chưa có kho nào.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <div class="modal-backdrop" *ngIf="showDeleteConfirm">
+        <div class="confirm-modal">
+            <h4>Xác nhận xóa</h4>
+            <p>Bạn có chắc muốn xóa kho <strong>{{ deletingSupply?.name }}</strong> không?</p>
+            <div class="modal-actions">
+                <button type="button" (click)="confirmDelete()">Đồng ý</button>
+                <button type="button" class="secondary" (click)="cancelDelete()">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <app-employee-manager-modal [(isOpen)]="showEmployeeModal"
+        (employeeSelected)="onEmployeeSelected($event)"></app-employee-manager-modal>
+</div>

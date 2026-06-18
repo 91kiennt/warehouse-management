@@ -1,0 +1,196 @@
+<section class="materials-page">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Danh mục vật tư</p>
+            <h2>Quản lý vật tư</h2>
+        </div>
+        <div class="message-banner" *ngIf="message" [ngClass]="messageType">
+            {{ message }}
+        </div>
+    </header>
+
+    <div class="material-layout-grid">
+        <!-- Panel nhập liệu -->
+        <section class="material-panel">
+            <div class="form-container">
+                <div class="form-inputs-side">
+                    <div class="form-row two-columns">
+                        <label>
+                            Mã:
+                            <input type="text" name="code" [(ngModel)]="materialForm.code" placeholder="Mã VT" />
+                        </label>
+                        <label>
+                            Mã vạch:
+                            <input type="text" name="barcode" [(ngModel)]="materialForm.barcode"
+                                placeholder="Mã vạch" />
+                        </label>
+                    </div>
+
+                    <label class="full-width">
+                        Tên:
+                        <input type="text" name="name" [(ngModel)]="materialForm.name" placeholder="Tên vật tư" />
+                    </label>
+
+                    <div class="form-row two-columns">
+                        <label>
+                            Cấp trên:
+                            <input type="text" name="parentCode" [(ngModel)]="materialForm.parentCode"
+                                placeholder="Mã cấp trên" />
+                        </label>
+                        <label>
+                            Nhóm hàng hoá:
+                            <input type="text" name="parentName" [(ngModel)]="materialForm.parentName"
+                                placeholder="Tên cấp trên" />
+                        </label>
+                    </div>
+
+                    <div class="form-row two-columns">
+                        <label>
+                            Đơn vị tính:
+                            <select name="unit" [(ngModel)]="materialForm.unit">
+                                <option *ngFor="let u of units" [value]="u">{{ u }}</option>
+                            </select>
+                        </label>
+                        <label>
+                            Loại tiền TT vốn:
+                            <select name="currency" [(ngModel)]="materialForm.currency">
+                                <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="form-row two-columns">
+                        <label>
+                            Kho:
+                            <select name="warehouse" [(ngModel)]="materialForm.warehouse">
+                                <option value="">-- Chọn kho --</option>
+                                <option *ngFor="let s of supplies" [value]="s.code">{{ s.code }} - {{ s.name }}</option>
+                            </select>
+                        </label>
+                        <label>
+                            PP tính giá vốn:
+                            <select name="valuationMethod" [(ngModel)]="materialForm.valuationMethod">
+                                <option *ngFor="let v of valuationMethods" [value]="v">{{ v }}</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label class="full-width">
+                        Đặc điểm:
+                        <input type="text" name="features" [(ngModel)]="materialForm.features" />
+                    </label>
+
+                    <div class="form-row two-columns">
+                        <label>
+                            Chịu thuế:
+                            <input type="text" name="taxable" [(ngModel)]="materialForm.taxable"
+                                placeholder="Ví dụ: 10% hoặc trống" />
+                        </label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="mrpMps" [(ngModel)]="materialForm.mrpMps" />
+                                Tính MRP, MPS
+                            </label>
+                            <label class="checkbox-label disabled">
+                                <input type="checkbox" name="calculateInventory"
+                                    [(ngModel)]="materialForm.calculateInventory" [disabled]="true" />
+                                Tính tồn kho
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row two-columns">
+                        <label>
+                            Từ ngày:
+                            <input type="text" appFlatpickr name="startDate" [(ngModel)]="materialForm.startDate" />
+                        </label>
+                        <label>
+                            Đến ngày:
+                            <input type="text" appFlatpickr name="endDate" [(ngModel)]="materialForm.endDate" />
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Cột ảnh bên phải -->
+                <div class="form-image-side">
+                    <div class="image-box">
+                        <img *ngIf="materialForm.imageData" [src]="materialForm.imageData" alt="Ảnh vật tư" />
+                        <div *ngIf="!materialForm.imageData" class="image-placeholder">
+                            <span>Không có ảnh</span>
+                        </div>
+                    </div>
+                    <div class="image-actions">
+                        <button type="button" class="btn-img-add" (click)="onTriggerImageUpload(imageInput)">+</button>
+                        <button type="button" class="btn-img-remove" (click)="onRemoveImage()">-</button>
+                    </div>
+                    <input type="file" #imageInput style="display: none" (change)="onImageSelected($event)"
+                        accept="image/*" />
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel danh sách -->
+        <section class="list-panel">
+            <div class="table-header">
+                <h3>Danh sách vật tư</h3>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">STT</th>
+                            <th>Mã</th>
+                            <th>Mã vạch</th>
+                            <th>Tên vật tư</th>
+                            <th>Đơn vị</th>
+                            <th>Kho</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let material of materials; let i = index" (click)="onSelectMaterial(material)"
+                            [class.selected]="material.id === selectedMaterialId">
+                            <td>{{ i + 1 }}</td>
+                            <td><strong>{{ material.code }}</strong></td>
+                            <td>{{ material.barcode }}</td>
+                            <td>{{ material.name }}</td>
+                            <td>{{ material.unit }}</td>
+                            <td>{{ material.warehouse }}</td>
+                        </tr>
+                        <tr *ngIf="materials.length === 0">
+                            <td colspan="6" class="empty">Chưa có vật tư nào trong cơ sở dữ liệu.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Thanh thao tác dưới cùng (Footer Action Bar) -->
+    <footer class="footer-action-bar">
+        <div class="left-actions">
+            <button type="button" class="secondary" disabled>Lấy từ file</button>
+            <button type="button" class="print-btn" (click)="onPrint()">In</button>
+            <button type="button" class="secondary" disabled>Gộp mã</button>
+        </div>
+        <div class="right-actions">
+            <button type="button" class="success" (click)="onAddNew()">Thêm</button>
+            <button type="button" class="secondary" disabled>Copy</button>
+            <button type="button" class="danger" [disabled]="selectedMaterialId === null"
+                (click)="selectedMaterialId !== null && onDelete(materials[selectedMaterialId])">Xóa</button>
+            <button type="button" class="primary" (click)="onSave()">Lưu</button>
+        </div>
+    </footer>
+
+    <!-- Hộp thoại xác nhận xóa -->
+    <div class="modal-backdrop" *ngIf="showDeleteConfirm">
+        <div class="confirm-modal">
+            <h4>Xác nhận xóa vật tư</h4>
+            <p>Bạn có chắc chắn muốn xóa vật tư <strong>{{ deletingMaterial?.name }}</strong> (Mã: {{
+                deletingMaterial?.code }}) khỏi hệ thống không?</p>
+            <div class="modal-actions">
+                <button type="button" class="secondary" (click)="cancelDelete()">Hủy bỏ</button>
+                <button type="button" class="danger" (click)="confirmDelete()">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+</section>

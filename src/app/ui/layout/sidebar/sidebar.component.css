@@ -1,0 +1,51 @@
+:host {
+    display: block;
+}
+
+.sidebar {
+    width: 220px;
+    min-width: 220px;
+    height: calc(100vh - 64px);
+    padding: 1.1rem 0.85rem;
+    background: #111827;
+    color: #cbd5e1;
+    border-right: 1px solid rgba(148, 163, 184, 0.16);
+    box-sizing: border-box;
+}
+
+.sidebar-brand {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.5rem;
+    padding-left: 0.5rem;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-section {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sidebar-nav a {
+    display: block;
+    padding: 0.7rem 0.9rem;
+    border-radius: 0.65rem;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+    background: rgba(16, 185, 129, 0.14);
+    color: #f8fafc;
+}

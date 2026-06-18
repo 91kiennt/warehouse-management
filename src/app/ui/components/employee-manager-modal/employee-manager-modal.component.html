@@ -1,0 +1,101 @@
+<div class="modal-overlay" *ngIf="isOpen">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h2>Danh mục cán bộ</h2>
+            <button class="close-btn" (click)="closeModal()">×</button>
+        </div>
+
+        <div class="modal-content">
+            <!-- Message Alert -->
+            <div class="alert" [ngClass]="messageType === 'success' ? 'alert-success' : 'alert-error'" *ngIf="message">
+                {{ message }}
+            </div>
+
+            <!-- Form Fields -->
+            <div class="form-group">
+                <label>Mã:</label>
+                <input type="text" [(ngModel)]="form.code" (keydown)="onCodeKeyDown($event)" placeholder="Nhập mã"
+                    [disabled]="isLoading" />
+            </div>
+
+            <div class="form-group">
+                <label>Tên:</label>
+                <input type="text" [(ngModel)]="form.name" placeholder="Nhập tên" [disabled]="isLoading" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Ngày sinh:</label>
+                    <input type="text" appFlatpickr [(ngModel)]="form.dateOfBirth" [disabled]="isLoading" />
+                </div>
+                <div class="form-group">
+                    <label>Giới tính:</label>
+                    <select [(ngModel)]="form.gender" [disabled]="isLoading">
+                        <option value="">-- Chọn --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Địa chỉ:</label>
+                <input type="text" [(ngModel)]="form.address" placeholder="Nhập địa chỉ" [disabled]="isLoading" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Điện thoại:</label>
+                    <input type="text" [(ngModel)]="form.phone" placeholder="Nhập điện thoại" [disabled]="isLoading" />
+                </div>
+                <div class="form-group">
+                    <label>Fax:</label>
+                    <input type="text" [(ngModel)]="form.fax" placeholder="Nhập fax" [disabled]="isLoading" />
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" [(ngModel)]="form.email" placeholder="Nhập email" [disabled]="isLoading" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Số CMND:</label>
+                    <input type="text" [(ngModel)]="form.idNumber" placeholder="Nhập số CMND" [disabled]="isLoading" />
+                </div>
+                <div class="form-group">
+                    <label>Ngày cấp:</label>
+                    <input type="text" appFlatpickr [(ngModel)]="form.idIssuedDate" [disabled]="isLoading" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Nơi cấp:</label>
+                <input type="text" [(ngModel)]="form.idIssuedPlace" placeholder="Nhập nơi cấp" [disabled]="isLoading" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Cấp trên:</label>
+                    <input type="text" [(ngModel)]="form.superior" placeholder="Nhập cấp trên" [disabled]="isLoading" />
+                </div>
+                <div class="form-group">
+                    <label>Ngày hiệu lực từ:</label>
+                    <input type="text" appFlatpickr [(ngModel)]="form.effectiveFromDate" [disabled]="isLoading" />
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-add" (click)="onAdd()" [disabled]="isLoading">
+                {{ isLoading ? 'Đang xử lý...' : 'Thêm' }}
+            </button>
+            <button class="btn btn-save" (click)="onSave()" [disabled]="isLoading">
+                {{ isLoading ? 'Đang xử lý...' : 'Lưu' }}
+            </button>
+            <button class="btn btn-close" (click)="closeModal()" [disabled]="isLoading">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
