@@ -14,19 +14,16 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Số chứng từ</label>
-                <input type="text" [(ngModel)]="issueNumber" placeholder="<<Tự động>>">
+                <input type="text" [(ngModel)]="issueNumber" (input)="onIssueInput($event)" (blur)="formatIssueNumber()"
+                    placeholder="<<Tự động>>">
             </div>
             <div class="form-group">
                 <label>Ngày hạch toán</label>
                 <input type="text" appFlatpickr [(ngModel)]="postingDate">
             </div>
             <div class="form-group">
-                <label>Trạng thái duyệt</label>
-                <select [(ngModel)]="status">
-                    <option value="1. Chờ duyệt">1. Chờ duyệt</option>
-                    <option value="2. Phê duyệt">2. Phê duyệt</option>
-                    <option value="3. Từ chối">3. Từ chối</option>
-                </select>
+                <label>Số chứng từ kèm theo</label>
+                <input type="text" [(ngModel)]="accompaniedDoc" placeholder="Số chứng từ kèm theo">
             </div>
             <div class="form-group">
                 <label>Số hóa đơn</label>
@@ -47,7 +44,8 @@
         <div class="form-grid secondary-grid">
             <div class="form-group">
                 <label>Người nhận hàng</label>
-                <input type="text" [(ngModel)]="receiverName" placeholder="Họ và tên người nhận">
+                <input type="text" [(ngModel)]="receiverName" (click)="openEmployeePopup()"
+                    placeholder="Chọn người nhận hàng..." readonly style="cursor: pointer;">
             </div>
             <div class="form-group">
                 <label>Địa chỉ (bộ phận)</label>
@@ -89,7 +87,7 @@
                         <th style="width: 180px;">Diễn giải</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody (keydown.enter)="onEnterPress($event)">
                     <tr *ngFor="let item of items; let i = index">
                         <td class="center-align">
                             <button class="btn-remove-row" (click)="removeGridItem(i)" title="Xoá dòng">
@@ -105,8 +103,8 @@
                             <input type="text" [(ngModel)]="item.warehouse" placeholder="Kho">
                         </td>
                         <td>
-                            <input type="text" [(ngModel)]="item.materialCode" (ngModelChange)="onMaterialCodeChange(i)"
-                                placeholder="Mã VT" class="code-input">
+                            <input type="text" [(ngModel)]="item.materialCode" readonly (focus)="openMaterialPopup(i)"
+                                (click)="openMaterialPopup(i)" placeholder="Mã VT" class="code-input">
                         </td>
                         <td>
                             <input type="text" [(ngModel)]="item.materialName" placeholder="Tên vật tư">
@@ -246,7 +244,8 @@
             </div>
             <div class="modal-body">
                 <div class="search-filter-box">
-                    <span class="info-text">Chọn một phiếu xuất kho trong danh sách dưới đây để tải dữ liệu lên biểu mẫu:</span>
+                    <span class="info-text">Chọn một phiếu xuất kho trong danh sách dưới đây để tải dữ liệu lên biểu
+                        mẫu:</span>
                 </div>
                 <div class="table-responsive search-table-box">
                     <table class="search-list-table">
@@ -256,7 +255,7 @@
                                 <th style="width: 150px;">Số chứng từ</th>
                                 <th style="width: 140px;">Ngày xuất</th>
                                 <th>Nội dung / Diễn giải</th>
-                                <th style="width: 120px;">Trạng thái</th>
+                                <th style="width: 150px;">Số CT kèm theo</th>
                                 <th style="width: 100px;">Thao tác</th>
                             </tr>
                         </thead>
@@ -266,13 +265,14 @@
                                 <td><strong>{{ i.issueNumber }}</strong></td>
                                 <td>{{ i.postingDate | date:'dd/MM/yyyy' }}</td>
                                 <td>{{ i.description }}</td>
-                                <td><span class="status-badge small">{{ i.status }}</span></td>
+                                <td>{{ i.accompaniedDoc }}</td>
                                 <td class="center-align">
                                     <button class="btn btn-primary btn-xs" (click)="selectIssue(i)">Chọn</button>
                                 </td>
                             </tr>
                             <tr *ngIf="issues.length === 0">
-                                <td colspan="6" class="center-align text-muted" style="padding: 2rem;">Chưa có phiếu xuất kho nào được lưu trong cơ sở dữ liệu.</td>
+                                <td colspan="6" class="center-align text-muted" style="padding: 2rem;">Chưa có phiếu
+                                    xuất kho nào được lưu trong cơ sở dữ liệu.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -306,121 +306,510 @@
 
             <!-- Printable Paper Sheet -->
             <div class="print-paper-sheet" id="printable-area">
-                <div class="paper-header">
-                    <div class="header-left">
-                        <div class="org-name">BAN CHỈ HUY HẬU CẦN</div>
-                        <div class="dept-name">BỘ PHẬN Y TẾ</div>
+                <!-- Org/Mẫu số Header -->
+                <div class="paper-header"
+                    style="margin-bottom: 1rem; display: flex; justify-content: space-between; width: 100%;">
+                    <div class="header-left" style="text-align: left; font-size: 0.95rem; line-height: 1.3;">
+                        <div>Đơn vị: BAN CHÍNH TRỊ, HẬU CẦN</div>
+                        <div>Bộ phận: QUÂN KHÍ</div>
+                        <div>Mã đơn vị QHNS: .............................</div>
                     </div>
-                    <div class="header-right">
-                        <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                        <div class="slogan">Độc lập - Tự do - Hạnh phúc</div>
-                        <div class="dots">---------------</div>
-                    </div>
-                </div>
-
-                <div class="paper-title-block">
-                    <h1>PHIẾU XUẤT KHO</h1>
-                    <div class="paper-date">
-                        Nguyên ngày hạch toán: {{ postingDate | date:'dd/MM/yyyy' }}
-                    </div>
-                    <div class="paper-doc-number">
-                        Số: <strong>{{ issueNumber }}</strong>
+                    <div class="header-right" style="text-align: center; font-size: 0.95rem; line-height: 1.3;">
+                        <div><strong>Mẫu số C21 - HD</strong></div>
+                        <div style="font-size: 0.85rem; max-width: 320px; font-style: italic;">
+                            (Ban hành theo QĐ số 19/2026/QĐ-BTC, ngày 30/03/2026 của Bộ Trưởng BTC)
+                        </div>
                     </div>
                 </div>
 
-                <div class="paper-meta-info">
-                    <div class="info-row">
-                        <span class="info-label">Họ và tên người nhận hàng:</span>
-                        <span class="info-value">{{ receiverName }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Địa chỉ (bộ phận):</span>
-                        <span class="info-value">{{ department }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Lý do xuất kho:</span>
-                        <span class="info-value">{{ reason }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Xuất tại kho (ngăn lô):</span>
-                        <span class="info-value">{{ warehouseLocation }}</span>
+                <!-- Title & Nợ/Có -->
+                <div class="paper-title-row"
+                    style="display: flex; width: 100%; margin-bottom: 1rem; position: relative;">
+                    <div style="width: 25%;"></div>
+                    <div class="paper-title-block" style="width: 50%; text-align: center;">
+                        <h1 style="font-size: 1.5rem; font-weight: bold; margin: 0 0 0.25rem 0;">PHIẾU XUẤT KHO</h1>
+                        <div class="paper-date" style="font-size: 0.95rem; margin-bottom: 0.25rem;">
+                            Ngày {{ postingDate | date:'dd' }} tháng {{ postingDate | date:'MM' }} năm {{ postingDate |
+                            date:'yyyy' }}
+                        </div>
+                        <div class="paper-doc-number" style="font-size: 0.95rem;">
+                            Số: {{ issueNumber }}
+                        </div>
                     </div>
                 </div>
 
-                <div class="paper-grid-container">
-                    <table class="paper-table">
+                <!-- Meta Row -->
+                <div class="paper-meta-info"
+                    style="margin-bottom: 1rem; font-size: 0.95rem; text-align: left; line-height: 1.4;">
+                    <div class="info-column">
+                        <div class="info-row">
+                            <span class="info-label">- Họ và tên người nhận hàng: </span>
+                            <span class="info-value">{{ receiverName }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">- Địa chỉ (bộ phận): </span>
+                            <span class="info-value">{{ department }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">- Lý do xuất kho: </span>
+                            <span class="info-value">{{ reason }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">- Xuất kho tại (ngăn, lô): </span>
+                            <span class="info-value">{{ warehouseLocation }}</span>
+                        </div>
+                    </div>
+                    <div class="info-column">
+                        <div>
+                            <span class="info-label">- Nợ: </span>
+                            <span class="info-value">........................</span>
+                        </div>
+                        <div>
+                            <span class="info-label">- Có: </span>
+                            <span class="info-value">........................</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Grid -->
+                <div class="paper-grid-container" style="width: 100%; margin-bottom: 1rem;">
+                    <table class="paper-table"
+                        style="width: 100%; border-collapse: collapse; font-size: 0.85rem; border: 1px solid #000;">
                         <thead>
                             <tr>
-                                <th style="width: 40px;" rowspan="2">Stt</th>
-                                <th style="width: 80px;" rowspan="2">Mã số</th>
-                                <th rowspan="2">Tên, nhãn hiệu, quy cách, phẩm chất vật tư</th>
-                                <th style="width: 60px;" rowspan="2">ĐVT</th>
-                                <th colspan="2">Số lượng</th>
-                                <th style="width: 100px;" rowspan="2">Đơn giá</th>
-                                <th style="width: 120px;" rowspan="2">Thành tiền</th>
+                                <th style="width: 30px; text-align: center; border: 1px solid #000; padding: 4px;"
+                                    rowspan="2">TT</th>
+                                <th style="width: 70px; text-align: center; border: 1px solid #000; padding: 4px;"
+                                    rowspan="2">MÃ HH</th>
+                                <th style="text-align: center; border: 1px solid #000; padding: 4px;" rowspan="2">
+                                    Tên, nhãn hiệu, quy cách, phẩm chất vật tư, dụng cụ sản phẩm, hàng hoá
+                                </th>
+                                <th style="width: 70px; text-align: center; border: 1px solid #000; padding: 4px;"
+                                    rowspan="2">MÃ SỐ</th>
+                                <th style="width: 50px; text-align: center; border: 1px solid #000; padding: 4px;"
+                                    rowspan="2">ĐVT</th>
+                                <th style="text-align: center; border: 1px solid #000; padding: 4px;" colspan="2">SỐ
+                                    LƯỢNG</th>
+                                <th style="width: 90px; text-align: center; border: 1px solid #000; padding: 4px;"
+                                    rowspan="2">ĐƠN GIÁ</th>
+                                <th style="width: 110px; text-align: center; border: 1px solid #000; padding: 4px;"
+                                    rowspan="2">THÀNH TIỀN</th>
                             </tr>
                             <tr>
-                                <th style="width: 80px;">Yêu cầu</th>
-                                <th style="width: 80px;">Thực xuất</th>
+                                <th style="width: 65px; text-align: center; border: 1px solid #000; padding: 4px;">Yêu
+                                    cầu</th>
+                                <th style="width: 65px; text-align: center; border: 1px solid #000; padding: 4px;">Thực
+                                    xuất</th>
+                            </tr>
+                            <!-- Column letters row -->
+                            <tr>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    A</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                </td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    B</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    C</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    D</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    D</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    1</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    2</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 2px; font-weight: bold; font-size: 0.75rem;">
+                                    3</td>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Filter empty items for clean print -->
-                            <tr *ngFor="let item of items; let idx = index">
-                                <ng-container *ngIf="item.materialCode.trim() !== ''">
-                                    <td class="center-align">{{ idx + 1 }}</td>
-                                    <td class="center-align">{{ item.materialCode }}</td>
-                                    <td>{{ item.materialName }}</td>
-                                    <td class="center-align">{{ item.unit }}</td>
-                                    <td class="right-align">{{ item.quantityReq | number }}</td>
-                                    <td class="right-align">{{ item.quantityReal | number }}</td>
-                                    <td class="right-align">{{ item.price | number:'1.0-0' }}</td>
-                                    <td class="right-align">{{ item.amount | number:'1.0-0' }}</td>
-                                </ng-container>
+                            <tr *ngFor="let item of getPrintItems(); let idx = index">
+                                <td style="text-align: center; border: 1px solid #000; padding: 4px;">{{ idx + 1 }}</td>
+                                <td
+                                    style="text-align: center; border: 1px solid #000; padding: 4px; font-weight: bold;">
+                                    {{ item.materialCode || '' }}</td>
+                                <td style="border: 1px solid #000; padding: 4px;">{{ item.materialName || '' }}</td>
+                                <td style="text-align: center; border: 1px solid #000; padding: 4px;">{{
+                                    item.materialBarcode || (item.isPad ? '0' : '') }}</td>
+                                <td style="text-align: center; border: 1px solid #000; padding: 4px;">{{ item.unit ||
+                                    (item.isPad ? '0' : '') }}</td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px;">{{ item.quantityReq
+                                    !== null ? (item.quantityReq | number) : '' }}</td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px;">{{
+                                    item.quantityReal !== null ? (item.quantityReal | number) : '' }}</td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px;">{{ item.price !==
+                                    null ? (item.price | number:'1.0-0') : (item.isPad ? '0' : '') }}</td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px; font-weight: bold;">
+                                    {{ item.amount !== null ? (item.amount | number:'1.0-0') : (item.isPad ? '-' : '')
+                                    }}</td>
                             </tr>
                             <!-- Totals Row -->
-                            <tr class="totals-row">
-                                <td colspan="4" class="center-align font-bold">Cộng</td>
-                                <td class="right-align font-bold">{{ getTotalQuantityReq() | number }}</td>
-                                <td class="right-align font-bold">{{ getTotalQuantityReal() | number }}</td>
-                                <td></td>
-                                <td class="right-align font-bold">{{ getTotalAmount() | number:'1.0-0' }}</td>
+                            <tr style="font-weight: bold; background: #f1f5f9;">
+                                <td style="text-align: center; border: 1px solid #000; padding: 4px;" colspan="3">Cộng
+                                </td>
+                                <td style="border: 1px solid #000; padding: 4px;"></td>
+                                <td style="border: 1px solid #000; padding: 4px;"></td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px;">{{
+                                    getTotalQuantityReq() | number }}</td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px;">{{
+                                    getTotalQuantityReal() | number }}</td>
+                                <td style="border: 1px solid #000; padding: 4px;"></td>
+                                <td style="text-align: right; border: 1px solid #000; padding: 4px;">{{ getTotalAmount()
+                                    | number:'1.0-0' }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="paper-amount-words">
-                    <strong>Tổng số tiền (viết bằng chữ): </strong> <span class="words-text italic">{{ getAmountInWords() }}</span>
+                <!-- Text Amount Words -->
+                <div class="paper-amount-words"
+                    style="margin-bottom: 1rem; font-size: 0.95rem; text-align: left; line-height: 1.4;">
+                    <div>Tổng số tiền (viết bằng chữ): <span class="words-text" style="font-style: italic;">{{
+                            getAmountInWords() }}</span></div>
+                    <div>Số chứng từ kèm theo: <span>{{ accompaniedDoc }}</span></div>
                 </div>
 
-                <div class="paper-footer">
-                    <div class="signature-date">
-                        Hà Nội, ngày {{ postingDate | date:'dd' }} tháng {{ postingDate | date:'MM' }} năm {{ postingDate | date:'yyyy' }}
+                <!-- Signatures -->
+                <div class="signatures-container" style="width: 100%; margin-top: 1rem;">
+                    <div class="signatures-date-container"
+                        style="width: 100%; text-align: right; font-style: italic; font-size: 0.95rem; margin-bottom: 0.5rem; padding-right: 3rem; box-sizing: border-box;">
+                        Hà Nội, ngày {{ postingDate | date:'dd' }} tháng {{ postingDate | date:'MM' }} năm {{
+                        postingDate | date:'yyyy' }}
                     </div>
-                    <div class="signatures-grid">
-                        <div class="signature-column">
-                            <span class="role">Người lập phiếu</span>
-                            <span class="sign-desc">(Ký, họ tên)</span>
+                    <div class="signatures-grid-custom">
+                        <!-- Row 1: 3 columns -->
+                        <div class="sig-col sig-c1">
+                            <div class="sig-title"><strong>Chỉ huy ban CTHC</strong></div>
+                            <div class="sig-desc">(Ký, họ tên)</div>
                         </div>
-                        <div class="signature-column">
-                            <span class="role">Người nhận hàng</span>
-                            <span class="sign-desc">(Ký, họ tên)</span>
+                        <div class="sig-col sig-c2">
+                            <div class="sig-title"><strong>Kế toán</strong></div>
+                            <div class="sig-desc">(Ký, họ tên)</div>
                         </div>
-                        <div class="signature-column">
-                            <span class="role">Thủ kho</span>
-                            <span class="sign-desc">(Ký, họ tên)</span>
+                        <div class="sig-col sig-c3">
+                            <div class="sig-title"><strong>PHÊ DUYỆT CỦA BAN GIÁM ĐỐC</strong></div>
+                            <div class="sig-desc">(Ký, họ tên, đóng dấu)</div>
                         </div>
-                        <div class="signature-column">
-                            <span class="role">Kế toán trưởng</span>
-                            <span class="sign-desc">(Ký, họ tên)</span>
+                        <!-- Row 2: 2 columns centered below -->
+                        <div class="sig-col sig-c4" style="margin-top: 1rem;">
+                            <div class="sig-title"><strong>Thủ kho/người giao</strong></div>
+                            <div class="sig-desc">(Ký, họ tên)</div>
                         </div>
-                        <div class="signature-column">
-                            <span class="role">Giám đốc / Thủ trưởng</span>
-                            <span class="sign-desc">(Ký, họ tên)</span>
+                        <div class="sig-col sig-c5" style="margin-top: 1rem;">
+                            <div class="sig-title"><strong>Người nhận hàng</strong></div>
+                            <div class="sig-desc">(Ký, họ tên)</div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog: Material Lookup Popup -->
+    <div class="modal-backdrop" *ngIf="showMaterialModal">
+        <div class="search-modal material-lookup-modal glass-panel">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="title-icon">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5"></path>
+                        <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                    <h2>Mã vật tư</h2>
+                </div>
+                <button class="btn-close" (click)="closeMaterialPopup()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Part 1: Search Row -->
+                <div class="lookup-search-row">
+                    <div class="lookup-search-field">
+                        <label>Mã VT:</label>
+                        <input type="text" [(ngModel)]="searchMaterialCode" (keydown.enter)="onGetMaterialData()"
+                            placeholder="Nhập mã vật tư để tìm kiếm...">
+                    </div>
+                    <button class="btn btn-primary" (click)="onGetMaterialData()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        Lấy dữ liệu
+                    </button>
+                </div>
+
+                <!-- Part 2: Materials Grid -->
+                <div class="table-responsive lookup-table-box">
+                    <table class="lookup-list-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">Mã</th>
+                                <th>Tên</th>
+                                <th style="width: 140px;">Tên đơn vị tính</th>
+                                <th style="width: 120px;">Thuế suất</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let m of filteredMaterials" [class.selected-row]="selectedPopupMaterial === m"
+                                (click)="selectPopupMaterialRow(m)" (dblclick)="confirmSelectMaterial()">
+                                <td><strong>{{ m.code }}</strong></td>
+                                <td>{{ m.name }}</td>
+                                <td>{{ m.unit }}</td>
+                                <td>{{ m.taxable || '' }}</td>
+                            </tr>
+                            <tr *ngIf="filteredMaterials.length === 0">
+                                <td colspan="4" class="center-align text-muted" style="padding: 2rem;">
+                                    Không tìm thấy vật tư nào phù hợp.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Part 3: Footer Actions -->
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="onAddNewMaterial()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Thêm
+                </button>
+                <button class="btn btn-success" [disabled]="!selectedPopupMaterial" (click)="confirmSelectMaterial()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Chọn
+                </button>
+                <button class="btn btn-danger" (click)="closeMaterialPopup()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog: Employee Lookup Popup -->
+    <div class="modal-backdrop" *ngIf="showEmployeeModal">
+        <div class="search-modal glass-panel" style="max-width: 700px;">
+            <div class="modal-header">
+                <div class="modal-header-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="color: #60a5fa;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #60a5fa;">Chọn nhân viên nhận
+                        hàng</h2>
+                </div>
+                <button class="btn-close" (click)="closeEmployeePopup()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive lookup-table-box" style="max-height: 400px; overflow-y: auto;">
+                    <table class="lookup-list-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px; text-align: center;">STT</th>
+                                <th style="width: 180px;">Mã Nhân Viên</th>
+                                <th>Tên Nhân Viên</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let c of customers; let idx = index"
+                                [class.selected-row]="selectedPopupCustomer === c" (click)="selectPopupCustomerRow(c)"
+                                (dblclick)="confirmSelectCustomer()">
+                                <td class="center-align">{{ idx + 1 }}</td>
+                                <td><strong>{{ c.code }}</strong></td>
+                                <td>{{ c.name }}</td>
+                            </tr>
+                            <tr *ngIf="customers.length === 0">
+                                <td colspan="3" class="center-align text-muted" style="padding: 2rem;">
+                                    Không tìm thấy nhân viên nào trong danh mục.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Footer Actions -->
+            <div class="modal-footer">
+                <button class="btn btn-success" [disabled]="!selectedPopupCustomer" (click)="confirmSelectCustomer()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Chọn
+                </button>
+                <button class="btn btn-danger" (click)="closeEmployeePopup()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog: Add Material Popup (Nested Modal) -->
+    <div class="modal-backdrop nested-modal-backdrop" *ngIf="showAddMaterialModal">
+        <div class="search-modal add-material-modal glass-panel">
+            <div class="modal-header">
+                <h2>Thêm Vật Tư Mới</h2>
+                <button class="btn-close" (click)="closeAddMaterialModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="material-popup-form-container">
+                    <div class="form-inputs-side">
+                        <div class="form-row two-columns">
+                            <label class="form-label-with-input">
+                                Mã:
+                                <input type="text" name="code" [(ngModel)]="materialForm.code"
+                                    (ngModelChange)="onMaterialFormCodeChange($event)" placeholder="Mã VT" />
+                            </label>
+                            <label class="form-label-with-input">
+                                Mã vạch:
+                                <input type="text" name="barcode" [(ngModel)]="materialForm.barcode"
+                                    placeholder="Mã vạch" />
+                            </label>
+                        </div>
+
+                        <label class="full-width form-label-with-input">
+                            Tên:
+                            <input type="text" name="name" [(ngModel)]="materialForm.name" placeholder="Tên vật tư" />
+                        </label>
+
+                        <div class="form-row two-columns">
+                            <label class="form-label-with-input">
+                                Cấp trên:
+                                <input type="text" name="parentCode" [(ngModel)]="materialForm.parentCode"
+                                    placeholder="Mã cấp trên" />
+                            </label>
+                            <label class="form-label-with-input">
+                                Nhóm hàng hoá:
+                                <input type="text" name="parentName" [(ngModel)]="materialForm.parentName"
+                                    placeholder="Tên cấp trên" />
+                            </label>
+                        </div>
+
+                        <div class="form-row two-columns">
+                            <label class="form-label-with-input">
+                                Đơn vị tính:
+                                <select name="unit" [(ngModel)]="materialForm.unit">
+                                    <option *ngFor="let u of units" [value]="u">{{ u }}</option>
+                                </select>
+                            </label>
+                            <label class="form-label-with-input">
+                                Loại tiền TT vốn:
+                                <select name="currency" [(ngModel)]="materialForm.currency">
+                                    <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="form-row two-columns">
+                            <label class="form-label-with-input">
+                                Kho:
+                                <select name="warehouse" [(ngModel)]="materialForm.warehouse">
+                                    <option value="">-- Chọn kho --</option>
+                                    <option *ngFor="let s of supplies" [value]="s.code">{{ s.code }} - {{ s.name }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="form-label-with-input">
+                                PP tính giá vốn:
+                                <select name="valuationMethod" [(ngModel)]="materialForm.valuationMethod">
+                                    <option *ngFor="let v of valuationMethods" [value]="v">{{ v }}</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <label class="full-width form-label-with-input">
+                            Đặc điểm:
+                            <input type="text" name="features" [(ngModel)]="materialForm.features" />
+                        </label>
+
+                        <div class="form-row two-columns-with-check">
+                            <label class="form-label-with-input">
+                                Chịu thuế:
+                                <input type="text" name="taxable" [(ngModel)]="materialForm.taxable"
+                                    placeholder="Ví dụ: 10% hoặc trống" />
+                            </label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="mrpMps" [(ngModel)]="materialForm.mrpMps" />
+                                    Tính MRP, MPS
+                                </label>
+                                <label class="checkbox-label disabled">
+                                    <input type="checkbox" name="calculateInventory"
+                                        [(ngModel)]="materialForm.calculateInventory" [disabled]="true" />
+                                    Tính tồn kho
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-row two-columns">
+                            <label class="form-label-with-input">
+                                Từ ngày:
+                                <input type="text" appFlatpickr name="startDate" [(ngModel)]="materialForm.startDate" />
+                            </label>
+                            <label class="form-label-with-input">
+                                Đến ngày:
+                                <input type="text" appFlatpickr name="endDate" [(ngModel)]="materialForm.endDate" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Image Section on Right -->
+                    <div class="form-image-side">
+                        <div class="image-box">
+                            <img *ngIf="materialForm.imageData" [src]="materialForm.imageData" alt="Ảnh vật tư" />
+                            <div *ngIf="!materialForm.imageData" class="image-placeholder">
+                                <span>Không có ảnh</span>
+                            </div>
+                        </div>
+                        <div class="image-actions">
+                            <button type="button" class="btn-img-add"
+                                (click)="onTriggerImageUpload(imageInput)">+</button>
+                            <button type="button" class="btn-img-remove" (click)="onRemoveImage()">-</button>
+                        </div>
+                        <input type="file" #imageInput style="display: none" (change)="onImageSelected($event)"
+                            accept="image/*" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" (click)="onSaveNewMaterial()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Lưu
+                </button>
+                <button class="btn btn-secondary" (click)="closeAddMaterialModal()">Đóng</button>
             </div>
         </div>
     </div>

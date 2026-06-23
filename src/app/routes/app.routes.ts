@@ -8,6 +8,8 @@ import { InventoryReportComponent } from "../ui/pages/report-builder/inventory-r
 import { InventorySummaryReportComponent } from "../ui/pages/report-builder/inventory-summary-report/inventory-summary-report.component";
 import { ReviewReportComponent } from "../ui/pages/report-builder/review-report/review-report.component";
 import { StrengthReportComponent } from "../ui/pages/report-builder/strength-report/strength-report.component";
+import { InventoryIssueReportComponent } from "../ui/pages/report-builder/inventory-issue-report/inventory-issue-report.component";
+import { InventoryReceiptReportComponent } from "../ui/pages/report-builder/inventory-receipt-report/inventory-receipt-report.component";
 
 export const routes: Routes = [
     { path: "", redirectTo: "customers", pathMatch: "full" },
@@ -46,6 +48,14 @@ export const routes: Routes = [
     {
         path: "strength-report",
         component: StrengthReportComponent,
+    },
+    {
+        path: "inventory-receipt-report",
+        component: InventoryReceiptReportComponent,
+    },
+    {
+        path: "inventory-issue-report",
+        component: InventoryIssueReportComponent,
     },
     { path: "**", redirectTo: "customers" },
 ];

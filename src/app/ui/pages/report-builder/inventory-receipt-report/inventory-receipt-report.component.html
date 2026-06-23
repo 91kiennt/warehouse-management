@@ -1,0 +1,262 @@
+<div class="report-container">
+    <!-- Part 1: Parameters Filter Panel -->
+    <div class="filter-panel glass-panel print-hide">
+        <h2 class="form-title">BÁO CÁO BẢNG KÊ PHIẾU NHẬP KHO</h2>
+
+        <div class="form-grid">
+            <!-- Row 1: Time, From Date, To Date -->
+            <div class="form-group">
+                <label>Thời gian</label>
+                <select [(ngModel)]="selectedMonth" (change)="onMonthChange()">
+                    <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Từ ngày</label>
+                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')" (keyup.enter)="onDateBlur('start')" />
+            </div>
+
+            <div class="form-group">
+                <label>Đến ngày</label>
+                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')" (keyup.enter)="onDateBlur('end')" />
+            </div>
+
+        </div>
+
+        <!-- Action Row -->
+        <div class="action-row">
+            <div class="actions-buttons">
+                <button class="btn btn-primary" (click)="onGetData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Xem
+                </button>
+                <button class="btn btn-success" (click)="onPrintReport()" [disabled]="reportRows.length === 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    In
+                </button>
+            </div>
+
+            <span class="status-msg" [class.error]="messageType === 'error'" *ngIf="message">{{ message }}</span>
+        </div>
+    </div>
+
+    <!-- Part 2: Statistical Report Grid Table -->
+    <div class="report-table-panel glass-panel print-hide" *ngIf="showReportTable">
+        <div class="panel-header-row">
+            <h3 class="panel-subtitle">KẾT QUẢ BẢNG KÊ CHI TIẾT</h3>
+            <span class="row-count">Tổng số dòng: {{ reportRows.length }}</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="report-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;" rowspan="2">Stt</th>
+                        <th colspan="2">Chứng từ</th>
+                        <th rowspan="2">Diễn giải</th>
+                        <th style="width: 100px;" rowspan="2">Mã vật tư</th>
+                        <th rowspan="2">Tên vật tư - hàng hóa</th>
+                        <th style="width: 60px;" rowspan="2">ĐVT</th>
+                        <th style="width: 90px;" rowspan="2">Số lượng</th>
+                        <th style="width: 110px;" rowspan="2">Giá mua</th>
+                        <th style="width: 120px;" rowspan="2">Tiền hàng</th>
+                        <th style="width: 130px;" rowspan="2">Tổng cộng</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 90px;">Số</th>
+                        <th style="width: 90px;">Ngày</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of reportRows" [class.group-header-row]="row.isHeader"
+                        [class.grand-total-row]="row.isTotal">
+
+                        <td class="center-align">{{ row.index }}</td>
+
+                        <!-- Header Row Style -->
+                        <ng-container *ngIf="row.isHeader">
+                            <td class="center-align"><strong>{{ row.receiptNumber }}</strong></td>
+                            <td class="center-align">{{ row.postingDate | date:'dd/MM/yyyy' }}</td>
+                            <td><strong>{{ row.description }}</strong></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="right-align"></td>
+                            <td class="right-align"><strong>{{ row.amount | number:'1.0-0' }}</strong></td>
+                            <td class="right-align"><strong>{{ row.totalAmount | number:'1.0-0' }}</strong></td>
+                        </ng-container>
+
+                        <!-- Total Row Style -->
+                        <ng-container *ngIf="row.isTotal">
+                            <td></td>
+                            <td></td>
+                            <td class="center-align"><strong>{{ row.description }}</strong></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="right-align"><strong>{{ row.quantity | number }}</strong></td>
+                            <td></td>
+                            <td class="right-align"><strong>{{ row.amount | number:'1.0-0' }}</strong></td>
+                            <td class="right-align"><strong>{{ row.totalAmount | number:'1.0-0' }}</strong></td>
+                        </ng-container>
+
+                        <!-- Normal Detail Row Style -->
+                        <ng-container *ngIf="!row.isHeader && !row.isTotal">
+                            <td class="center-align">{{ row.receiptNumber }}</td>
+                            <td class="center-align">{{ row.postingDate | date:'dd/MM/yyyy' }}</td>
+                            <td>{{ row.description }}</td>
+                            <td class="center-align"><strong>{{ row.materialCode }}</strong></td>
+                            <td>{{ row.materialName }}</td>
+                            <td class="center-align">{{ row.unit }}</td>
+                            <td class="right-align">{{ row.quantity | number }}</td>
+                            <td class="right-align">{{ row.price | number:'1.0-0' }}</td>
+                            <td class="right-align">{{ row.amount | number:'1.0-0' }}</td>
+                            <td class="right-align">{{ row.totalAmount | number:'1.0-0' }}</td>
+                        </ng-container>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Part 3: Printable Preview Modal (Landscape A4) -->
+    <div class="print-preview-backdrop" *ngIf="showPrintModal">
+        <div class="print-preview-modal glass-panel">
+            <div class="preview-actions-bar print-hide">
+                <span class="preview-title">XEM TRƯỚC BẢN IN</span>
+                <div class="preview-actions">
+                    <button class="btn btn-primary" (click)="triggerSystemPrint()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        In thực tế
+                    </button>
+                    <button class="btn btn-danger" (click)="closePrintModal()">Đóng bản xem</button>
+                </div>
+            </div>
+
+            <!-- Printable Paper Sheet -->
+            <div class="print-paper-sheet" id="printable-area">
+                <div class="paper-header">
+                    <div class="header-left">
+                        <div class="org-name">Đơn vị báo cáo: Công ty TNHH An Ngọc Lan</div>
+                        <div class="dept-name">Địa chỉ: Thôn Từ Dương - Xã Tô Hiệu - Huyện Thường Tín - Hà Nội</div>
+                    </div>
+                </div>
+
+                <div class="paper-title-block">
+                    <h1>BẢNG KÊ PHIẾU NHẬP KHO</h1>
+                    <div class="paper-date">
+                        Từ ngày: {{ startDate | date:'dd/MM/yyyy' }} Đến ngày: {{ endDate | date:'dd/MM/yyyy' }}
+                    </div>
+                </div>
+
+                <div class="paper-grid-container">
+                    <table class="paper-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;" rowspan="2">Stt</th>
+                                <th colspan="2">Chứng từ</th>
+                                <th rowspan="2">Diễn giải</th>
+                                <th style="width: 90px;" rowspan="2">Mã vật tư</th>
+                                <th rowspan="2">Tên vật tư - hàng hóa</th>
+                                <th style="width: 50px;" rowspan="2">ĐVT</th>
+                                <th style="width: 80px;" rowspan="2">Số lượng</th>
+                                <th style="width: 100px;" rowspan="2">Giá mua</th>
+                                <th style="width: 110px;" rowspan="2">Tiền hàng</th>
+                                <th style="width: 110px;" rowspan="2">Tổng cộng</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 80px;">Số</th>
+                                <th style="width: 80px;">Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of reportRows" [class.group-header-row]="row.isHeader"
+                                [class.grand-total-row]="row.isTotal">
+
+                                <td class="center-align">{{ row.index }}</td>
+
+                                <!-- Group Header Row -->
+                                <ng-container *ngIf="row.isHeader">
+                                    <td class="center-align"><strong>{{ row.receiptNumber }}</strong></td>
+                                    <td class="center-align">{{ row.postingDate | date:'dd/MM/yyyy' }}</td>
+                                    <td><strong>{{ row.description }}</strong></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="right-align"></td>
+                                    <td class="right-align"><strong>{{ row.amount | number:'1.0-0' }}</strong></td>
+                                    <td class="right-align"><strong>{{ row.totalAmount | number:'1.0-0' }}</strong></td>
+                                </ng-container>
+
+                                <!-- Grand Total Row -->
+                                <ng-container *ngIf="row.isTotal">
+                                    <td></td>
+                                    <td></td>
+                                    <td class="center-align"><strong>{{ row.description }}</strong></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="right-align"><strong>{{ row.quantity | number }}</strong></td>
+                                    <td></td>
+                                    <td class="right-align"><strong>{{ row.amount | number:'1.0-0' }}</strong></td>
+                                    <td class="right-align"><strong>{{ row.totalAmount | number:'1.0-0' }}</strong></td>
+                                </ng-container>
+
+                                <!-- Normal Detail Row -->
+                                <ng-container *ngIf="!row.isHeader && !row.isTotal">
+                                    <td class="center-align">{{ row.receiptNumber }}</td>
+                                    <td class="center-align">{{ row.postingDate | date:'dd/MM/yyyy' }}</td>
+                                    <td>{{ row.description }}</td>
+                                    <td class="center-align">{{ row.materialCode }}</td>
+                                    <td>{{ row.materialName }}</td>
+                                    <td class="center-align">{{ row.unit }}</td>
+                                    <td class="right-align">{{ row.quantity | number }}</td>
+                                    <td class="right-align">{{ row.price | number:'1.0-0' }}</td>
+                                    <td class="right-align">{{ row.amount | number:'1.0-0' }}</td>
+                                    <td class="right-align">{{ row.totalAmount | number:'1.0-0' }}</td>
+                                </ng-container>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="paper-footer">
+                    <div class="signature-date">
+                        Hà Nội, ngày...... tháng...... năm 20...
+                    </div>
+                    <div class="signatures-grid">
+                        <div class="signature-column">
+                            <span class="role">Người lập biểu</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">Kế toán trưởng</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">Thủ trưởng đơn vị</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên, đóng dấu)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

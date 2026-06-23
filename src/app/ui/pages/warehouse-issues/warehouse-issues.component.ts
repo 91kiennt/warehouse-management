@@ -17,14 +17,24 @@ interface IssueItem {
     amount: number;
     finishedProduct: string; // Thành phẩm
     notes: string; // Diễn giải
+    materialBarcode?: string; // Mã vạch vật tư
+    isPad?: boolean; // Cờ dòng đệm in ấn
 }
 
 interface SavedMaterial {
     id: number;
     code: string;
+    barcode: string; // Thêm mã vạch
     name: string;
     unit: string;
     warehouse: string;
+    taxable?: string;
+}
+
+interface SavedSupply {
+    id: number;
+    code: string;
+    name: string;
 }
 
 interface SavedIssue {
@@ -34,7 +44,7 @@ interface SavedIssue {
     invoiceNumber: string;
     invoiceDate: string;
     description: string;
-    status: string;
+    accompaniedDoc: string;
     receiverName: string;
     department: string;
     reason: string;
@@ -57,7 +67,7 @@ export class WarehouseIssuesComponent implements OnInit {
     invoiceNumber = "";
     invoiceDate = "";
     description = "";
-    status = "";
+    accompaniedDoc = "";
     receiverName = "";
     department = "";
     reason = "";
@@ -80,10 +90,33 @@ export class WarehouseIssuesComponent implements OnInit {
     message = "";
     messageType: "success" | "error" = "success";
 
+    // Material Popup Modal States
+    showMaterialModal = false;
+    searchMaterialCode = "";
+    filteredMaterials: SavedMaterial[] = [];
+    selectedPopupMaterial: SavedMaterial | null = null;
+    activeRowIndex: number | null = null;
+
+    // Material Form Options & States
+    units = ["Kg", "Cái", "Hộp", "Thùng", "Lít", "Mét"];
+    currencies = ["đồng", "USD", "EUR"];
+    valuationMethods = ["Bình quân cuối kỳ", "FIFO", "LIFO", "Đích danh"];
+    supplies: SavedSupply[] = [];
+
+    showAddMaterialModal = false;
+    materialForm = this.emptyMaterialForm();
+
+    // Employee/Customer Popup Modal States
+    showEmployeeModal = false;
+    customers: any[] = [];
+    selectedPopupCustomer: any | null = null;
+
     ngOnInit(): void {
         this.resetForm();
         this.loadMaterials();
         this.loadIssues();
+        this.loadSupplies();
+        this.loadCustomers();
     }
 
     // Load master materials to auto-lookup
@@ -93,12 +126,24 @@ export class WarehouseIssuesComponent implements OnInit {
             this.materials = list.map(m => ({
                 id: m.id,
                 code: m.code,
+                barcode: m.barcode || "",
                 name: m.name,
                 unit: m.unit,
-                warehouse: m.warehouse
+                warehouse: m.warehouse,
+                taxable: m.taxable
             }));
         } catch (error) {
             console.error("Lỗi khi tải danh sách vật tư:", error);
+        }
+    }
+
+    // Load master customers (employees)
+    async loadCustomers(): Promise<void> {
+        try {
+            this.customers = await invoke<any[]>("list_customers");
+            this.customers.sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+        } catch (error) {
+            console.error("Lỗi khi tải danh sách nhân viên:", error);
         }
     }
 
@@ -113,7 +158,7 @@ export class WarehouseIssuesComponent implements OnInit {
                 invoiceNumber: i.invoiceNumber ?? (i as any).invoice_number,
                 invoiceDate: i.invoiceDate ?? (i as any).invoice_date,
                 description: i.description,
-                status: i.status,
+                accompaniedDoc: i.accompaniedDoc ?? (i as any).accompanied_doc,
                 receiverName: i.receiverName ?? (i as any).receiver_name,
                 department: i.department,
                 reason: i.reason,
@@ -134,7 +179,7 @@ export class WarehouseIssuesComponent implements OnInit {
         this.invoiceNumber = "";
         this.invoiceDate = "";
         this.description = "";
-        this.status = "";
+        this.accompaniedDoc = "";
         this.receiverName = "";
         this.department = "";
         this.reason = "";
@@ -157,6 +202,7 @@ export class WarehouseIssuesComponent implements OnInit {
             amount: 0,
             finishedProduct: "",
             notes: "",
+            materialBarcode: "",
         };
     }
 
@@ -169,10 +215,76 @@ export class WarehouseIssuesComponent implements OnInit {
     }
 
     generateIssueNumber(): string {
-        const index = this.issues.length + 1;
-        const indexStr = index < 10 ? `00${index}` : index < 100 ? `0${index}` : `${index}`;
-        const year = new Date().getFullYear();
-        return `${indexStr}/XK-QY/${year}`;
+        // Collect all existing suffixes that match XK/\d{5}
+        const existingNumbers = this.issues
+            .map(i => {
+                const match = i.issueNumber.match(/^XK\/(\d{5})$/);
+                return match ? parseInt(match[1], 10) : 0;
+            })
+            .filter(n => n > 0);
+
+        // Find the maximum number
+        let nextNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
+
+        // Double check against any conflict, increment if conflict exists
+        while (this.issues.some(i => i.issueNumber === `XK/${nextNum.toString().padStart(5, "0")}`)) {
+            nextNum++;
+        }
+
+        return `XK/${nextNum.toString().padStart(5, "0")}`;
+    }
+
+    onIssueInput(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        let val = input.value;
+
+        if (!val || val.trim() === "" || val === "XK/") {
+            this.issueNumber = "";
+            input.value = "";
+            return;
+        }
+
+        let suffix = val;
+        if (suffix.startsWith("XK/")) {
+            suffix = suffix.substring(3);
+        } else if (suffix.startsWith("XK")) {
+            suffix = suffix.substring(2);
+        } else if (suffix.startsWith("X")) {
+            suffix = suffix.substring(1);
+        }
+        
+        let digits = suffix.replace(/\D/g, "");
+        if (digits === "") {
+            this.issueNumber = "XK/";
+            input.value = "XK/";
+            return;
+        }
+
+        // Limit to maximum of 5 digits while typing (do not pad instantly)
+        if (digits.length > 5) {
+            digits = digits.substring(0, 5);
+        }
+        
+        const formatted = "XK/" + digits;
+        this.issueNumber = formatted;
+        input.value = formatted;
+    }
+
+    formatIssueNumber(): void {
+        if (!this.issueNumber || this.issueNumber.trim() === "" || this.issueNumber === "XK/") {
+            this.issueNumber = "";
+            return;
+        }
+        let suffix = this.issueNumber;
+        if (suffix.startsWith("XK/")) {
+            suffix = suffix.substring(3);
+        }
+        let digits = suffix.replace(/\D/g, "");
+        if (digits === "") {
+            this.issueNumber = "";
+        } else {
+            this.issueNumber = "XK/" + digits.padStart(5, "0");
+        }
     }
 
     // Auto lookup when user changes material code
@@ -253,13 +365,30 @@ export class WarehouseIssuesComponent implements OnInit {
     // Actions
     onAddNew(): void {
         this.resetForm();
+        this.issueNumber = this.generateIssueNumber();
         this.showFeedback("Mẫu nhập phiếu mới đã được thiết lập.");
     }
 
     async onSave(): Promise<void> {
+        // Generate issue number if left empty
+        if (!this.issueNumber || this.issueNumber.trim() === "" || this.issueNumber === "XK/") {
+            this.issueNumber = this.generateIssueNumber();
+        }
+        // Ensure the issue number is formatted before validation and save
+        this.formatIssueNumber();
         const code = this.issueNumber.trim();
         if (!code) {
             this.showFeedback("Vui lòng nhập Số chứng từ.", "error");
+            return;
+        }
+
+        // Check for duplicate issue number in the database
+        const isDuplicate = this.issues.some(i => 
+            i.issueNumber.trim().toUpperCase() === code.toUpperCase() && 
+            (this.selectedIssueId === null || i.id !== this.selectedIssueId)
+        );
+        if (isDuplicate) {
+            this.showFeedback("Số chứng từ đã tồn tại trong hệ thống. Vui lòng nhập số khác.", "error");
             return;
         }
 
@@ -276,7 +405,7 @@ export class WarehouseIssuesComponent implements OnInit {
             invoiceNumber: this.invoiceNumber.trim(),
             invoiceDate: this.invoiceDate,
             description: this.description.trim(),
-            status: this.status,
+            accompaniedDoc: this.accompaniedDoc.trim(),
             receiverName: this.receiverName.trim(),
             department: this.department.trim(),
             reason: this.reason.trim(),
@@ -347,7 +476,7 @@ export class WarehouseIssuesComponent implements OnInit {
         this.invoiceNumber = issue.invoiceNumber;
         this.invoiceDate = issue.invoiceDate;
         this.description = issue.description;
-        this.status = issue.status;
+        this.accompaniedDoc = issue.accompaniedDoc;
         this.receiverName = issue.receiverName;
         this.department = issue.department;
         this.reason = issue.reason;
@@ -355,7 +484,13 @@ export class WarehouseIssuesComponent implements OnInit {
 
         try {
             const parsedItems = JSON.parse(issue.items) as IssueItem[];
-            this.items = [...parsedItems];
+            this.items = parsedItems.map(item => {
+                const masterMat = this.materials.find(m => m.code === item.materialCode);
+                return {
+                    ...item,
+                    materialBarcode: item.materialBarcode || (masterMat ? masterMat.barcode : "")
+                };
+            });
             // Ensure there is always a blank row at the bottom for appending
             this.items.push(this.createBlankItem());
         } catch (error) {
@@ -383,6 +518,30 @@ export class WarehouseIssuesComponent implements OnInit {
 
     triggerPrint(): void {
         window.print();
+    }
+
+    getPrintItems(): any[] {
+        const validItems = this.items.filter(item => item.materialCode.trim() !== "");
+        const printItems = [...validItems];
+        
+        while (printItems.length < 6) {
+            printItems.push({
+                warehouse: "",
+                materialCode: "",
+                materialName: "",
+                materialBarcode: "",
+                unit: "",
+                stockQty: 0,
+                quantityReq: 0,
+                quantityReal: 0,
+                price: 0,
+                amount: 0,
+                finishedProduct: "",
+                notes: "",
+                isPad: true
+            });
+        }
+        return printItems;
     }
 
     // Vietnamese Number-to-Words Converter
@@ -467,7 +626,7 @@ export class WarehouseIssuesComponent implements OnInit {
         sheet.views = [{ showGridLines: true }];
 
         // Header Section
-        sheet.addRow(["BAN CHỈ HUY HẬU CẦN", "", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"]);
+        sheet.addRow(["BAN CHÍNH TRỊ HẬU CẦN", "", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"]);
         sheet.addRow(["BỘ PHẬN Y TẾ", "", "", "", "", "Độc lập - Tự do - Hạnh phúc"]);
         sheet.addRow([]);
 
@@ -480,6 +639,7 @@ export class WarehouseIssuesComponent implements OnInit {
         sheet.addRow([]);
 
         // General Info
+        sheet.addRow([`Số chứng từ kèm theo: ${this.accompaniedDoc}`]);
         sheet.addRow([`Họ và tên người nhận hàng: ${this.receiverName}`]);
         sheet.addRow([`Địa chỉ (bộ phận): ${this.department}`]);
         sheet.addRow([`Lý do xuất kho: ${this.reason}`]);
@@ -609,5 +769,240 @@ export class WarehouseIssuesComponent implements OnInit {
             this.showFeedback("Lỗi khi xuất tệp Excel.", "error");
             console.error(error);
         }
+    }
+
+    onEnterPress(event: Event): void {
+        const currentInput = event.target as HTMLElement;
+        if (currentInput.tagName !== 'INPUT') return;
+        
+        event.preventDefault();
+        const row = currentInput.closest('tr');
+        if (!row) return;
+        
+        const rowInputs = Array.from(row.querySelectorAll('input:not([disabled])')) as HTMLInputElement[];
+        const currentIndex = rowInputs.indexOf(currentInput as HTMLInputElement);
+        
+        if (currentIndex !== -1 && currentIndex < rowInputs.length - 1) {
+            rowInputs[currentIndex + 1].focus();
+        } else {
+            const nextRow = row.nextElementSibling;
+            if (nextRow) {
+                const nextRowInputs = Array.from(nextRow.querySelectorAll('input:not([disabled])')) as HTMLInputElement[];
+                if (nextRowInputs.length > 0) {
+                    nextRowInputs[0].focus();
+                }
+            }
+        }
+    }
+
+    openMaterialPopup(index: number): void {
+        this.activeRowIndex = index;
+        this.searchMaterialCode = "";
+        this.selectedPopupMaterial = null;
+        this.filteredMaterials = [...this.materials];
+        this.showMaterialModal = true;
+    }
+
+    closeMaterialPopup(): void {
+        this.showMaterialModal = false;
+        this.focusNextInputAfterSelect();
+    }
+
+    selectPopupMaterialRow(material: SavedMaterial): void {
+        this.selectedPopupMaterial = material;
+    }
+
+    confirmSelectMaterial(): void {
+        if (!this.selectedPopupMaterial || this.activeRowIndex === null) return;
+        const row = this.items[this.activeRowIndex];
+        const match = this.selectedPopupMaterial;
+        
+        row.materialCode = match.code;
+        row.materialName = match.name;
+        row.unit = match.unit;
+        row.warehouse = match.warehouse;
+        row.materialBarcode = match.barcode || "";
+        
+        this.checkAndAppendRow(this.activeRowIndex);
+        
+        this.showMaterialModal = false;
+        this.focusNextInputAfterSelect();
+    }
+
+    async onGetMaterialData(): Promise<void> {
+        await this.loadMaterials();
+        const search = this.searchMaterialCode.trim().toUpperCase();
+        if (search === "") {
+            this.filteredMaterials = [...this.materials];
+        } else {
+            this.filteredMaterials = this.materials.filter(m =>
+                m.code.toUpperCase().includes(search)
+            );
+        }
+    }
+
+    emptyMaterialForm() {
+        return {
+            code: "",
+            barcode: "",
+            name: "",
+            parentCode: "",
+            parentName: "",
+            unit: "Kg",
+            currency: "đồng",
+            warehouse: "",
+            valuationMethod: "Bình quân cuối kỳ",
+            features: "",
+            taxable: "",
+            mrpMps: false,
+            calculateInventory: true,
+            startDate: "",
+            endDate: "",
+            imageData: "",
+        };
+    }
+
+    async loadSupplies(): Promise<void> {
+        try {
+            const result = await invoke<any[]>("list_supplies");
+            this.supplies = result.map(s => ({
+                id: s.id,
+                code: s.code,
+                name: s.name
+            }));
+            if (this.supplies.length > 0 && !this.materialForm.warehouse) {
+                this.materialForm.warehouse = this.supplies[0].code;
+            }
+        } catch (error) {
+            console.error("Không thể tải danh mục kho:", error);
+        }
+    }
+
+    onAddNewMaterial(): void {
+        this.materialForm = this.emptyMaterialForm();
+        if (this.supplies.length > 0) {
+            this.materialForm.warehouse = this.supplies[0].code;
+        }
+        this.showAddMaterialModal = true;
+    }
+
+    closeAddMaterialModal(): void {
+        this.showAddMaterialModal = false;
+    }
+
+    onMaterialFormCodeChange(val: string): void {
+        this.materialForm.barcode = val;
+    }
+
+    async onSaveNewMaterial(): Promise<void> {
+        const code = this.materialForm.code.trim();
+        const name = this.materialForm.name.trim();
+        if (!code || !name) {
+            this.showFeedback("Mã và Tên vật tư bắt buộc phải nhập.", "error");
+            return;
+        }
+
+        const payload = {
+            code,
+            barcode: this.materialForm.barcode.trim() || code,
+            name,
+            parentCode: this.materialForm.parentCode.trim(),
+            parentName: this.materialForm.parentName.trim(),
+            unit: this.materialForm.unit,
+            currency: this.materialForm.currency,
+            warehouse: this.materialForm.warehouse,
+            valuationMethod: this.materialForm.valuationMethod,
+            features: this.materialForm.features.trim(),
+            taxable: this.materialForm.taxable.trim(),
+            mrpMps: this.materialForm.mrpMps ? 1 : 0,
+            calculateInventory: 1, // always true
+            startDate: this.materialForm.startDate,
+            endDate: this.materialForm.endDate,
+            imageData: this.materialForm.imageData,
+        };
+
+        try {
+            await invoke("save_material", {
+                material: payload,
+            });
+            this.showFeedback("Thêm vật tư mới thành công.");
+            
+            // Reload materials list from SQLite
+            await this.loadMaterials();
+            
+            // Re-apply filter
+            const search = this.searchMaterialCode.trim().toUpperCase();
+            if (search === "") {
+                this.filteredMaterials = [...this.materials];
+            } else {
+                this.filteredMaterials = this.materials.filter(m =>
+                    m.code.toUpperCase().includes(search)
+                );
+            }
+
+            // Close the Add Material Popup, leaving the Mã Vật Tư Popup open
+            this.showAddMaterialModal = false;
+        } catch (error) {
+            this.showFeedback("Lỗi khi lưu dữ liệu vật tư.", "error");
+            console.error(error);
+        }
+    }
+
+    onTriggerImageUpload(fileInput: HTMLInputElement): void {
+        fileInput.click();
+    }
+
+    onImageSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.materialForm.imageData = e.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    onRemoveImage(): void {
+        this.materialForm.imageData = "";
+    }
+
+    focusNextInputAfterSelect(): void {
+        if (this.activeRowIndex === null) return;
+        const idx = this.activeRowIndex;
+        setTimeout(() => {
+            const tableBody = document.querySelector('.issue-grid-table tbody');
+            if (!tableBody) return;
+            const rows = tableBody.querySelectorAll('tr');
+            if (idx < rows.length) {
+                const row = rows[idx];
+                const rowInputs = Array.from(row.querySelectorAll('input')) as HTMLInputElement[];
+                const codeInputIndex = rowInputs.findIndex(inp => inp.placeholder === 'Mã VT');
+                if (codeInputIndex !== -1 && codeInputIndex + 1 < rowInputs.length) {
+                    rowInputs[codeInputIndex + 1].focus();
+                }
+            }
+        }, 50);
+    }
+
+    openEmployeePopup(): void {
+        this.selectedPopupCustomer = null;
+        this.showEmployeeModal = true;
+        this.loadCustomers();
+    }
+
+    closeEmployeePopup(): void {
+        this.showEmployeeModal = false;
+    }
+
+    selectPopupCustomerRow(customer: any): void {
+        this.selectedPopupCustomer = customer;
+    }
+
+    confirmSelectCustomer(): void {
+        if (!this.selectedPopupCustomer) return;
+        this.receiverName = this.selectedPopupCustomer.name;
+        this.showEmployeeModal = false;
     }
 }

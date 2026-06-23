@@ -44,6 +44,12 @@ export class SuppliesComponent implements OnInit {
     supplyForm: SupplyForm = this.emptyForm();
     showEmployeeModal = false;
 
+    // Pagination properties
+    pageSize = 10;
+    pageIndex = 1;
+    totalItems = 0;
+    pageSizeOptions = [10, 25, 50, 100];
+
     ngOnInit(): void {
         this.loadSupplies();
     }
@@ -62,20 +68,54 @@ export class SuppliesComponent implements OnInit {
 
     async loadSupplies(): Promise<void> {
         try {
-            this.supplies = await invoke<SavedSupply[]>("list_supplies");
-            this.supplies = this.supplies.map((item) => ({
+            const limit = this.pageSize;
+            const offset = (this.pageIndex - 1) * this.pageSize;
+            const res = await invoke<{ items: SavedSupply[], total: number }>("list_supplies_paginated", {
+                limit,
+                offset
+            });
+            this.supplies = res.items.map((item) => ({
                 ...item,
                 parentWarehouse: item.parentWarehouse ?? (item as any).parent_warehouse,
                 startDate: item.startDate ?? (item as any).start_date,
                 endDate: item.endDate ?? (item as any).end_date,
                 createdAt: item.createdAt ?? (item as any).created_at,
             }));
+            this.totalItems = res.total;
             this.supplies.sort((a, b) => a.id - b.id);
             this.message = "";
         } catch (error) {
             console.error(error);
             this.message = "Không thể tải danh sách kho.";
         }
+    }
+
+    onPageChange(newPageIndex: number): void {
+        const maxPage = this.totalPages;
+        if (newPageIndex < 1 || newPageIndex > maxPage) {
+            return;
+        }
+        this.pageIndex = newPageIndex;
+        this.loadSupplies();
+    }
+
+    onPageSizeChange(newPageSize: number): void {
+        this.pageSize = newPageSize;
+        this.pageIndex = 1;
+        this.loadSupplies();
+    }
+
+    get totalPages(): number {
+        return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+    }
+
+    get showingStart(): number {
+        if (this.totalItems === 0) return 0;
+        return (this.pageIndex - 1) * this.pageSize + 1;
+    }
+
+    get showingEnd(): number {
+        return Math.min(this.pageIndex * this.pageSize, this.totalItems);
     }
 
     onAddNew(): void {
@@ -169,6 +209,14 @@ export class SuppliesComponent implements OnInit {
             this.message = `Đã xóa kho "${this.deletingSupply.name}".`;
             this.showDeleteConfirm = false;
             this.deletingSupply = null;
+
+            // Handle boundary check: if we deleted the last item of the last page, go to the previous page
+            const totalAfterDelete = this.totalItems - 1;
+            const maxPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / this.pageSize));
+            if (this.pageIndex > maxPageAfterDelete) {
+                this.pageIndex = maxPageAfterDelete;
+            }
+
             await this.loadSupplies();
             this.onAddNew();
         } catch (error) {

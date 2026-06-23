@@ -3,7 +3,7 @@ mod database;
 use crate::database::{
     CustomerInput, Database, EmployeeInput, ReportData, ReportInput, SavedCustomer, SavedEmployee,
     SavedSupply, SupplyInput, MaterialInput, SavedMaterial, WarehouseReceiptInput, SavedWarehouseReceipt,
-    WarehouseIssueInput, SavedWarehouseIssue,
+    WarehouseIssueInput, SavedWarehouseIssue, PaginatedCustomers, PaginatedSupplies, PaginatedMaterials,
 };
 use base64::Engine;
 use directories::ProjectDirs;
@@ -101,6 +101,19 @@ fn list_customers(state: tauri::State<'_, AppState>) -> Result<Vec<SavedCustomer
 }
 
 #[tauri::command]
+fn list_customers_paginated(
+    state: tauri::State<'_, AppState>,
+    limit: i64,
+    offset: i64,
+) -> Result<PaginatedCustomers, String> {
+    state
+        .db
+        .lock()
+        .map_err(|e| e.to_string())
+        .and_then(|db| db.list_customers_paginated(limit, offset).map_err(|e| e.to_string()))
+}
+
+#[tauri::command]
 fn update_customer(
     state: tauri::State<'_, AppState>,
     id: i64,
@@ -141,6 +154,19 @@ fn list_supplies(state: tauri::State<'_, AppState>) -> Result<Vec<SavedSupply>, 
         .lock()
         .map_err(|e| e.to_string())
         .and_then(|db| db.list_supplies().map_err(|e| e.to_string()))
+}
+
+#[tauri::command]
+fn list_supplies_paginated(
+    state: tauri::State<'_, AppState>,
+    limit: i64,
+    offset: i64,
+ ) -> Result<PaginatedSupplies, String> {
+     state
+         .db
+         .lock()
+         .map_err(|e| e.to_string())
+         .and_then(|db| db.list_supplies_paginated(limit, offset).map_err(|e| e.to_string()))
 }
 
 #[tauri::command]
@@ -187,6 +213,19 @@ fn list_materials(state: tauri::State<'_, AppState>) -> Result<Vec<SavedMaterial
 }
 
 #[tauri::command]
+fn list_materials_paginated(
+    state: tauri::State<'_, AppState>,
+    limit: i64,
+    offset: i64,
+) -> Result<PaginatedMaterials, String> {
+    state
+        .db
+        .lock()
+        .map_err(|e| e.to_string())
+        .and_then(|db| db.list_materials_paginated(limit, offset).map_err(|e| e.to_string()))
+}
+
+#[tauri::command]
 fn update_material(
     state: tauri::State<'_, AppState>,
     id: i64,
@@ -213,11 +252,14 @@ fn save_warehouse_receipt(
     state: tauri::State<'_, AppState>,
     receipt: WarehouseReceiptInput,
 ) -> Result<SavedWarehouseReceipt, String> {
-    state
+    println!("[TAURI BE] save_warehouse_receipt payload: {:?}", receipt);
+    let result = state
         .db
         .lock()
         .map_err(|e| e.to_string())
-        .and_then(|db| db.save_warehouse_receipt(receipt).map_err(|e| e.to_string()))
+        .and_then(|db| db.save_warehouse_receipt(receipt).map_err(|e| e.to_string()));
+    println!("[TAURI BE] save_warehouse_receipt result: {:?}", result);
+    result
 }
 
 #[tauri::command]
@@ -237,11 +279,14 @@ fn update_warehouse_receipt(
     id: i64,
     receipt: WarehouseReceiptInput,
 ) -> Result<SavedWarehouseReceipt, String> {
-    state
+    println!("[TAURI BE] update_warehouse_receipt id: {}, payload: {:?}", id, receipt);
+    let result = state
         .db
         .lock()
         .map_err(|e| e.to_string())
-        .and_then(|db| db.update_warehouse_receipt(id, receipt).map_err(|e| e.to_string()))
+        .and_then(|db| db.update_warehouse_receipt(id, receipt).map_err(|e| e.to_string()));
+    println!("[TAURI BE] update_warehouse_receipt result: {:?}", result);
+    result
 }
 
 #[tauri::command]
@@ -386,10 +431,12 @@ pub fn run() {
             save_excel_buffer,
             save_customer,
             list_customers,
+            list_customers_paginated,
             update_customer,
             delete_customer,
             save_supply,
             list_supplies,
+            list_supplies_paginated,
             update_supply,
             delete_supply,
             save_employee,
@@ -397,6 +444,7 @@ pub fn run() {
             update_employee,
             save_material,
             list_materials,
+            list_materials_paginated,
             update_material,
             delete_material,
             save_warehouse_receipt,

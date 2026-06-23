@@ -187,6 +187,27 @@ pub struct SavedMaterial {
     pub created_at: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedCustomers {
+    pub items: Vec<SavedCustomer>,
+    pub total: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedSupplies {
+    pub items: Vec<SavedSupply>,
+    pub total: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedMaterials {
+    pub items: Vec<SavedMaterial>,
+    pub total: i64,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WarehouseReceiptInput {
@@ -195,7 +216,8 @@ pub struct WarehouseReceiptInput {
     pub invoice_number: String,
     pub invoice_date: String,
     pub description: String,
-    pub status: String,
+    pub delivery_person: String,
+    pub accompanied_doc: String,
     pub department: String,
     pub reason: String,
     pub warehouse_location: String,
@@ -211,7 +233,8 @@ pub struct SavedWarehouseReceipt {
     pub invoice_number: String,
     pub invoice_date: String,
     pub description: String,
-    pub status: String,
+    pub delivery_person: String,
+    pub accompanied_doc: String,
     pub department: String,
     pub reason: String,
     pub warehouse_location: String,
@@ -227,7 +250,7 @@ pub struct WarehouseIssueInput {
     pub invoice_number: String,
     pub invoice_date: String,
     pub description: String,
-    pub status: String,
+    pub accompanied_doc: String,
     pub receiver_name: String,
     pub department: String,
     pub reason: String,
@@ -244,7 +267,7 @@ pub struct SavedWarehouseIssue {
     pub invoice_number: String,
     pub invoice_date: String,
     pub description: String,
-    pub status: String,
+    pub accompanied_doc: String,
     pub receiver_name: String,
     pub department: String,
     pub reason: String,
@@ -266,132 +289,172 @@ impl Database {
     }
 
     fn migrate(&self) -> Result<()> {
-        self.conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS customers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL,
-                name TEXT NOT NULL,
-                address TEXT NOT NULL,
-                tax_id TEXT NOT NULL,
-                bank_account TEXT NOT NULL,
-                bank_name TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                fax TEXT NOT NULL,
-                email TEXT NOT NULL,
-                credit_limit REAL NOT NULL,
-                supervisor TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                permanent_residence TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS supplies (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL,
-                name TEXT NOT NULL,
-                parent_warehouse TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                manager TEXT NOT NULL,
-                location TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS employees (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL,
-                name TEXT NOT NULL,
-                date_of_birth TEXT NOT NULL,
-                address TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                fax TEXT NOT NULL,
-                email TEXT NOT NULL,
-                id_number TEXT NOT NULL,
-                id_issued_date TEXT NOT NULL,
-                id_issued_place TEXT NOT NULL,
-                gender TEXT NOT NULL,
-                superior TEXT NOT NULL,
-                effective_from_date TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                template TEXT NOT NULL,
-                title TEXT NOT NULL,
-                data TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS materials (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL,
-                barcode TEXT NOT NULL,
-                name TEXT NOT NULL,
-                parent_code TEXT NOT NULL,
-                parent_name TEXT NOT NULL,
-                unit TEXT NOT NULL,
-                currency TEXT NOT NULL,
-                warehouse TEXT NOT NULL,
-                valuation_method TEXT NOT NULL,
-                features TEXT NOT NULL,
-                taxable TEXT NOT NULL,
-                mrp_mps INTEGER NOT NULL,
-                calculate_inventory INTEGER NOT NULL DEFAULT 1,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                image_data TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS warehouse_receipts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                receipt_number TEXT NOT NULL,
-                posting_date TEXT NOT NULL,
-                invoice_number TEXT NOT NULL,
-                invoice_date TEXT NOT NULL,
-                description TEXT NOT NULL,
-                status TEXT NOT NULL,
-                department TEXT NOT NULL,
-                reason TEXT NOT NULL,
-                warehouse_location TEXT NOT NULL,
-                items TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS warehouse_issues (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                issue_number TEXT NOT NULL,
-                posting_date TEXT NOT NULL,
-                invoice_number TEXT NOT NULL,
-                invoice_date TEXT NOT NULL,
-                description TEXT NOT NULL,
-                status TEXT NOT NULL,
-                receiver_name TEXT NOT NULL,
-                department TEXT NOT NULL,
-                reason TEXT NOT NULL,
-                warehouse_location TEXT NOT NULL,
-                items TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );",
-        )?;
+        let mut version: i32 = self.conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
 
-        // Migrate customers table to add extra fields required for EmployeeManagerModal
-        let _ = self.conn.execute(
-            "ALTER TABLE customers ADD COLUMN date_of_birth TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = self.conn.execute(
-            "ALTER TABLE customers ADD COLUMN id_number TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = self.conn.execute(
-            "ALTER TABLE customers ADD COLUMN id_issued_date TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = self.conn.execute(
-            "ALTER TABLE customers ADD COLUMN id_issued_place TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = self.conn.execute(
-            "ALTER TABLE customers ADD COLUMN gender TEXT NOT NULL DEFAULT ''",
-            [],
-        );
+        if version < 1 {
+            self.conn.execute_batch(
+                "CREATE TABLE IF NOT EXISTS customers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    tax_id TEXT NOT NULL,
+                    bank_account TEXT NOT NULL,
+                    bank_name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    fax TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    credit_limit REAL NOT NULL,
+                    supervisor TEXT NOT NULL,
+                    start_date TEXT NOT NULL,
+                    end_date TEXT NOT NULL,
+                    permanent_residence TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS supplies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    parent_warehouse TEXT NOT NULL,
+                    start_date TEXT NOT NULL,
+                    end_date TEXT NOT NULL,
+                    manager TEXT NOT NULL,
+                    location TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS employees (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    date_of_birth TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    fax TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    id_number TEXT NOT NULL,
+                    id_issued_date TEXT NOT NULL,
+                    id_issued_place TEXT NOT NULL,
+                    gender TEXT NOT NULL,
+                    superior TEXT NOT NULL,
+                    effective_from_date TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    template TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS materials (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    barcode TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    parent_code TEXT NOT NULL,
+                    parent_name TEXT NOT NULL,
+                    unit TEXT NOT NULL,
+                    currency TEXT NOT NULL,
+                    warehouse TEXT NOT NULL,
+                    valuation_method TEXT NOT NULL,
+                    features TEXT NOT NULL,
+                    taxable TEXT NOT NULL,
+                    mrp_mps INTEGER NOT NULL,
+                    calculate_inventory INTEGER NOT NULL DEFAULT 1,
+                    start_date TEXT NOT NULL,
+                    end_date TEXT NOT NULL,
+                    image_data TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS warehouse_receipts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    receipt_number TEXT NOT NULL,
+                    posting_date TEXT NOT NULL,
+                    invoice_number TEXT NOT NULL,
+                    invoice_date TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    delivery_person TEXT NOT NULL DEFAULT '',
+                    accompanied_doc TEXT NOT NULL DEFAULT '',
+                    department TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    warehouse_location TEXT NOT NULL,
+                    items TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS warehouse_issues (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    issue_number TEXT NOT NULL,
+                    posting_date TEXT NOT NULL,
+                    invoice_number TEXT NOT NULL,
+                    invoice_date TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    accompanied_doc TEXT NOT NULL DEFAULT '',
+                    receiver_name TEXT NOT NULL,
+                    department TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    warehouse_location TEXT NOT NULL,
+                    items TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );",
+            )?;
+
+            self.conn.execute("PRAGMA user_version = 1", [])?;
+            version = 1;
+            println!("[TAURI BE migrate] Database migrated to Version 1 (Initial schema created)");
+        }
+
+        if version < 2 {
+            // Migrate customers table to add extra fields required for EmployeeManagerModal
+            let _ = self.conn.execute(
+                "ALTER TABLE customers ADD COLUMN date_of_birth TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+            let _ = self.conn.execute(
+                "ALTER TABLE customers ADD COLUMN id_number TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+            let _ = self.conn.execute(
+                "ALTER TABLE customers ADD COLUMN id_issued_date TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+            let _ = self.conn.execute(
+                "ALTER TABLE customers ADD COLUMN id_issued_place TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+            let _ = self.conn.execute(
+                "ALTER TABLE customers ADD COLUMN gender TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+
+            // Migrate warehouse tables to add delivery_person and accompanied_doc fields
+            let _ = self.conn.execute(
+                "ALTER TABLE warehouse_receipts ADD COLUMN delivery_person TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+            let _ = self.conn.execute(
+                "ALTER TABLE warehouse_receipts ADD COLUMN accompanied_doc TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+            let _ = self.conn.execute(
+                "ALTER TABLE warehouse_issues ADD COLUMN accompanied_doc TEXT NOT NULL DEFAULT ''",
+                [],
+            );
+
+            // Drop status column from warehouse tables if they exist
+            if let Err(e) = self.conn.execute("ALTER TABLE warehouse_receipts DROP COLUMN status", []) {
+                println!("[TAURI BE migrate] Info: Alter table warehouse_receipts DROP COLUMN status returned/failed (ignore if column didn't exist): {:?}", e);
+            } else {
+                println!("[TAURI BE migrate] Success: Alter table warehouse_receipts DROP COLUMN status");
+            }
+            if let Err(e) = self.conn.execute("ALTER TABLE warehouse_issues DROP COLUMN status", []) {
+                println!("[TAURI BE migrate] Info: Alter table warehouse_issues DROP COLUMN status returned/failed (ignore if column didn't exist): {:?}", e);
+            } else {
+                println!("[TAURI BE migrate] Success: Alter table warehouse_issues DROP COLUMN status");
+            }
+
+            self.conn.execute("PRAGMA user_version = 2", [])?;
+            println!("[TAURI BE migrate] Database migrated to Version 2 (Dynamic fields and status drops processed)");
+        }
 
         Ok(())
     }
@@ -483,6 +546,45 @@ impl Database {
         })?;
 
         rows.collect()
+    }
+
+    pub fn list_customers_paginated(&self, limit: i64, offset: i64) -> Result<PaginatedCustomers> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, code, name, address, tax_id, bank_account, bank_name, phone, fax, email, credit_limit, supervisor, start_date, end_date, permanent_residence, created_at FROM customers ORDER BY id ASC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt.query_map(params![limit, offset], |row| {
+            Ok(SavedCustomer {
+                id: row.get(0)?,
+                code: row.get(1)?,
+                name: row.get(2)?,
+                address: row.get(3)?,
+                tax_id: row.get(4)?,
+                bank_account: row.get(5)?,
+                bank_name: row.get(6)?,
+                phone: row.get(7)?,
+                fax: row.get(8)?,
+                email: row.get(9)?,
+                credit_limit: row.get(10)?,
+                supervisor: row.get(11)?,
+                start_date: row.get(12)?,
+                end_date: row.get(13)?,
+                permanent_residence: row.get(14)?,
+                created_at: row.get(15)?,
+            })
+        })?;
+
+        let mut items = Vec::new();
+        for r in rows {
+            items.push(r?);
+        }
+
+        let total: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM customers",
+            [],
+            |row| row.get(0),
+        )?;
+
+        Ok(PaginatedCustomers { items, total })
     }
 
     pub fn get_customer(&self, id: i64) -> Result<SavedCustomer> {
@@ -601,6 +703,38 @@ impl Database {
         })?;
 
         rows.collect()
+    }
+
+    pub fn list_supplies_paginated(&self, limit: i64, offset: i64) -> Result<PaginatedSupplies> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, code, name, parent_warehouse, start_date, end_date, manager, location, created_at FROM supplies ORDER BY id ASC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt.query_map(params![limit, offset], |row| {
+            Ok(SavedSupply {
+                id: row.get(0)?,
+                code: row.get(1)?,
+                name: row.get(2)?,
+                parent_warehouse: row.get(3)?,
+                start_date: row.get(4)?,
+                end_date: row.get(5)?,
+                manager: row.get(6)?,
+                location: row.get(7)?,
+                created_at: row.get(8)?,
+            })
+        })?;
+
+        let mut items = Vec::new();
+        for r in rows {
+            items.push(r?);
+        }
+
+        let total: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM supplies",
+            [],
+            |row| row.get(0),
+        )?;
+
+        Ok(PaginatedSupplies { items, total })
     }
 
     pub fn get_supply(&self, id: i64) -> Result<SavedSupply> {
@@ -932,6 +1066,47 @@ impl Database {
         rows.collect()
     }
 
+    pub fn list_materials_paginated(&self, limit: i64, offset: i64) -> Result<PaginatedMaterials> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, code, barcode, name, parent_code, parent_name, unit, currency, warehouse, valuation_method, features, taxable, mrp_mps, calculate_inventory, start_date, end_date, image_data, created_at FROM materials ORDER BY id ASC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt.query_map(params![limit, offset], |row| {
+            Ok(SavedMaterial {
+                id: row.get(0)?,
+                code: row.get(1)?,
+                barcode: row.get(2)?,
+                name: row.get(3)?,
+                parent_code: row.get(4)?,
+                parent_name: row.get(5)?,
+                unit: row.get(6)?,
+                currency: row.get(7)?,
+                warehouse: row.get(8)?,
+                valuation_method: row.get(9)?,
+                features: row.get(10)?,
+                taxable: row.get(11)?,
+                mrp_mps: row.get(12)?,
+                calculate_inventory: row.get(13)?,
+                start_date: row.get(14)?,
+                end_date: row.get(15)?,
+                image_data: row.get(16)?,
+                created_at: row.get(17)?,
+            })
+        })?;
+
+        let mut items = Vec::new();
+        for r in rows {
+            items.push(r?);
+        }
+
+        let total: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM materials",
+            [],
+            |row| row.get(0),
+        )?;
+
+        Ok(PaginatedMaterials { items, total })
+    }
+
     pub fn get_material(&self, id: i64) -> Result<SavedMaterial> {
         self.conn.query_row(
             "SELECT id, code, barcode, name, parent_code, parent_name, unit, currency, warehouse, valuation_method, features, taxable, mrp_mps, calculate_inventory, start_date, end_date, image_data, created_at FROM materials WHERE id = ?1",
@@ -1023,20 +1198,22 @@ impl Database {
                 invoice_number,
                 invoice_date,
                 description,
-                status,
+                delivery_person,
+                accompanied_doc,
                 department,
                 reason,
                 warehouse_location,
                 items,
                 created_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             params![
                 receipt.receipt_number,
                 receipt.posting_date,
                 receipt.invoice_number,
                 receipt.invoice_date,
                 receipt.description,
-                receipt.status,
+                receipt.delivery_person,
+                receipt.accompanied_doc,
                 receipt.department,
                 receipt.reason,
                 receipt.warehouse_location,
@@ -1051,7 +1228,7 @@ impl Database {
 
     pub fn list_warehouse_receipts(&self) -> Result<Vec<SavedWarehouseReceipt>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, receipt_number, posting_date, invoice_number, invoice_date, description, status, department, reason, warehouse_location, items, created_at FROM warehouse_receipts",
+            "SELECT id, receipt_number, posting_date, invoice_number, invoice_date, description, delivery_person, accompanied_doc, department, reason, warehouse_location, items, created_at FROM warehouse_receipts",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -1062,12 +1239,13 @@ impl Database {
                 invoice_number: row.get(3)?,
                 invoice_date: row.get(4)?,
                 description: row.get(5)?,
-                status: row.get(6)?,
-                department: row.get(7)?,
-                reason: row.get(8)?,
-                warehouse_location: row.get(9)?,
-                items: row.get(10)?,
-                created_at: row.get(11)?,
+                delivery_person: row.get(6)?,
+                accompanied_doc: row.get(7)?,
+                department: row.get(8)?,
+                reason: row.get(9)?,
+                warehouse_location: row.get(10)?,
+                items: row.get(11)?,
+                created_at: row.get(12)?,
             })
         })?;
 
@@ -1076,7 +1254,7 @@ impl Database {
 
     pub fn get_warehouse_receipt(&self, id: i64) -> Result<SavedWarehouseReceipt> {
         self.conn.query_row(
-            "SELECT id, receipt_number, posting_date, invoice_number, invoice_date, description, status, department, reason, warehouse_location, items, created_at FROM warehouse_receipts WHERE id = ?1",
+            "SELECT id, receipt_number, posting_date, invoice_number, invoice_date, description, delivery_person, accompanied_doc, department, reason, warehouse_location, items, created_at FROM warehouse_receipts WHERE id = ?1",
             params![id],
             |row| {
                 Ok(SavedWarehouseReceipt {
@@ -1086,12 +1264,13 @@ impl Database {
                     invoice_number: row.get(3)?,
                     invoice_date: row.get(4)?,
                     description: row.get(5)?,
-                    status: row.get(6)?,
-                    department: row.get(7)?,
-                    reason: row.get(8)?,
-                    warehouse_location: row.get(9)?,
-                    items: row.get(10)?,
-                    created_at: row.get(11)?,
+                    delivery_person: row.get(6)?,
+                    accompanied_doc: row.get(7)?,
+                    department: row.get(8)?,
+                    reason: row.get(9)?,
+                    warehouse_location: row.get(10)?,
+                    items: row.get(11)?,
+                    created_at: row.get(12)?,
                 })
             },
         )
@@ -1109,19 +1288,21 @@ impl Database {
                 invoice_number = ?3,
                 invoice_date = ?4,
                 description = ?5,
-                status = ?6,
-                department = ?7,
-                reason = ?8,
-                warehouse_location = ?9,
-                items = ?10
-            WHERE id = ?11",
+                delivery_person = ?6,
+                accompanied_doc = ?7,
+                department = ?8,
+                reason = ?9,
+                warehouse_location = ?10,
+                items = ?11
+            WHERE id = ?12",
             params![
                 receipt.receipt_number,
                 receipt.posting_date,
                 receipt.invoice_number,
                 receipt.invoice_date,
                 receipt.description,
-                receipt.status,
+                receipt.delivery_person,
+                receipt.accompanied_doc,
                 receipt.department,
                 receipt.reason,
                 receipt.warehouse_location,
@@ -1151,7 +1332,7 @@ impl Database {
                 invoice_number,
                 invoice_date,
                 description,
-                status,
+                accompanied_doc,
                 receiver_name,
                 department,
                 reason,
@@ -1165,7 +1346,7 @@ impl Database {
                 issue.invoice_number,
                 issue.invoice_date,
                 issue.description,
-                issue.status,
+                issue.accompanied_doc,
                 issue.receiver_name,
                 issue.department,
                 issue.reason,
@@ -1181,7 +1362,7 @@ impl Database {
 
     pub fn list_warehouse_issues(&self) -> Result<Vec<SavedWarehouseIssue>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, issue_number, posting_date, invoice_number, invoice_date, description, status, receiver_name, department, reason, warehouse_location, items, created_at FROM warehouse_issues",
+            "SELECT id, issue_number, posting_date, invoice_number, invoice_date, description, accompanied_doc, receiver_name, department, reason, warehouse_location, items, created_at FROM warehouse_issues",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -1192,7 +1373,7 @@ impl Database {
                 invoice_number: row.get(3)?,
                 invoice_date: row.get(4)?,
                 description: row.get(5)?,
-                status: row.get(6)?,
+                accompanied_doc: row.get(6)?,
                 receiver_name: row.get(7)?,
                 department: row.get(8)?,
                 reason: row.get(9)?,
@@ -1207,7 +1388,7 @@ impl Database {
 
     pub fn get_warehouse_issue(&self, id: i64) -> Result<SavedWarehouseIssue> {
         self.conn.query_row(
-            "SELECT id, issue_number, posting_date, invoice_number, invoice_date, description, status, receiver_name, department, reason, warehouse_location, items, created_at FROM warehouse_issues WHERE id = ?1",
+            "SELECT id, issue_number, posting_date, invoice_number, invoice_date, description, accompanied_doc, receiver_name, department, reason, warehouse_location, items, created_at FROM warehouse_issues WHERE id = ?1",
             params![id],
             |row| {
                 Ok(SavedWarehouseIssue {
@@ -1217,7 +1398,7 @@ impl Database {
                     invoice_number: row.get(3)?,
                     invoice_date: row.get(4)?,
                     description: row.get(5)?,
-                    status: row.get(6)?,
+                    accompanied_doc: row.get(6)?,
                     receiver_name: row.get(7)?,
                     department: row.get(8)?,
                     reason: row.get(9)?,
@@ -1241,7 +1422,7 @@ impl Database {
                 invoice_number = ?3,
                 invoice_date = ?4,
                 description = ?5,
-                status = ?6,
+                accompanied_doc = ?6,
                 receiver_name = ?7,
                 department = ?8,
                 reason = ?9,
@@ -1254,7 +1435,7 @@ impl Database {
                 issue.invoice_number,
                 issue.invoice_date,
                 issue.description,
-                issue.status,
+                issue.accompanied_doc,
                 issue.receiver_name,
                 issue.department,
                 issue.reason,

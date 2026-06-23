@@ -56,6 +56,12 @@ export class CustomersComponent implements OnInit {
     message = "";
     customerForm: CustomerForm = this.emptyForm();
 
+    // Pagination properties
+    pageSize = 10;
+    pageIndex = 1;
+    totalItems = 0;
+    pageSizeOptions = [10, 25, 50, 100];
+
     ngOnInit(): void {
         this.loadCustomers();
     }
@@ -81,7 +87,14 @@ export class CustomersComponent implements OnInit {
 
     async loadCustomers(): Promise<void> {
         try {
-            this.customers = await invoke<SavedCustomer[]>("list_customers");
+            const limit = this.pageSize;
+            const offset = (this.pageIndex - 1) * this.pageSize;
+            const res = await invoke<{ items: SavedCustomer[], total: number }>("list_customers_paginated", {
+                limit,
+                offset
+            });
+            this.customers = res.items;
+            this.totalItems = res.total;
             // Ensure ascending order by id on the client as a safety measure
             this.customers.sort((a, b) => a.id - b.id);
             this.message = "";
@@ -89,6 +102,34 @@ export class CustomersComponent implements OnInit {
             this.message = "Không thể tải danh sách nhân viên.";
             console.error(error);
         }
+    }
+
+    onPageChange(newPageIndex: number): void {
+        const maxPage = this.totalPages;
+        if (newPageIndex < 1 || newPageIndex > maxPage) {
+            return;
+        }
+        this.pageIndex = newPageIndex;
+        this.loadCustomers();
+    }
+
+    onPageSizeChange(newPageSize: number): void {
+        this.pageSize = newPageSize;
+        this.pageIndex = 1;
+        this.loadCustomers();
+    }
+
+    get totalPages(): number {
+        return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+    }
+
+    get showingStart(): number {
+        if (this.totalItems === 0) return 0;
+        return (this.pageIndex - 1) * this.pageSize + 1;
+    }
+
+    get showingEnd(): number {
+        return Math.min(this.pageIndex * this.pageSize, this.totalItems);
     }
 
     onAddNew(): void {
@@ -180,6 +221,14 @@ export class CustomersComponent implements OnInit {
             this.message = `Đã xóa nhân viên "${this.deletingCustomer.name}".`;
             this.showDeleteConfirm = false;
             this.deletingCustomer = null;
+
+            // Handle boundary check: if we deleted the last item of the last page, go to the previous page
+            const totalAfterDelete = this.totalItems - 1;
+            const maxPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / this.pageSize));
+            if (this.pageIndex > maxPageAfterDelete) {
+                this.pageIndex = maxPageAfterDelete;
+            }
+
             await this.loadCustomers();
             this.onAddNew();
         } catch (error) {

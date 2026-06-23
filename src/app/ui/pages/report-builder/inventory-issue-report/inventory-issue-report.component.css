@@ -29,7 +29,7 @@
     padding-left: 0.75rem;
 }
 
-/* Form Grid (3 columns for summary report filter) */
+/* Form Grid */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -50,7 +50,8 @@
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+input.flatpickr-custom-input {
     background: #090d16 !important;
     border: 1px solid rgba(148, 163, 184, 0.25) !important;
     border-radius: 0.75rem !important;
@@ -77,10 +78,32 @@
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+input.flatpickr-custom-input:focus {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
     background-color: #0f172a !important;
+}
+
+.span-all {
+    grid-column: 1 / -1;
+}
+
+.info-only-group {
+    justify-content: center;
+}
+
+.info-badge {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    display: inline-block;
+    align-self: flex-start;
 }
 
 /* Actions Row */
@@ -130,6 +153,14 @@
 
 .btn-success:hover:not(:disabled) {
     background: #047857;
+}
+
+.btn-info {
+    background: #0891b2;
+}
+
+.btn-info:hover:not(:disabled) {
+    background: #0e7490;
 }
 
 .btn-danger {
@@ -206,27 +237,8 @@
     vertical-align: middle;
 }
 
-.report-grid-table tbody tr:hover:not(.grand-total-row) {
+.report-grid-table tbody tr:hover:not(.group-header-row):not(.grand-total-row) {
     background: rgba(255, 255, 255, 0.02);
-}
-
-/* Interactive clickable row */
-.clickable-row {
-    cursor: pointer;
-    transition: background 0.15s ease;
-}
-
-.clickable-row:hover {
-    background: rgba(59, 130, 246, 0.08) !important;
-}
-
-.clickable-row.active-row {
-    background: rgba(59, 130, 246, 0.18) !important;
-    position: relative;
-}
-
-.clickable-row.active-row td:first-child {
-    border-left: 3px solid #3b82f6;
 }
 
 .center-align {
@@ -237,12 +249,17 @@
     text-align: right;
 }
 
-.muted-text {
-    opacity: 0.45;
-    font-weight: 300;
+/* Accounting specific rows styling */
+.report-grid-table tr.group-header-row {
+    background-color: rgba(13, 71, 161, 0.35) !important;
+    border-bottom: 2px solid rgba(37, 99, 235, 0.5);
 }
 
-/* Totals Row */
+.report-grid-table tr.group-header-row td {
+    color: #60a5fa !important;
+    font-weight: bold;
+}
+
 .report-grid-table tr.grand-total-row {
     background-color: rgba(51, 65, 85, 0.6) !important;
     border-top: 2px solid #475569;
@@ -252,40 +269,6 @@
 .report-grid-table tr.grand-total-row td {
     color: #f8fafc !important;
     font-weight: bold;
-}
-
-/* Details table additions */
-.details-table th {
-    background: rgba(30, 41, 59, 0.9) !important;
-    color: #94a3b8 !important;
-}
-
-.empty-text {
-    color: #64748b;
-    padding: 2rem !important;
-    font-style: italic;
-}
-
-/* Badges for movement types */
-.badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 9999px;
-    text-align: center;
-}
-
-.badge-import {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.25);
-}
-
-.badge-export {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 /* Print Preview Dialog (Landscape A4) */
@@ -305,7 +288,7 @@
 }
 
 .print-preview-modal {
-    max-width: 1200px;
+    max-width: 1100px;
     width: 100%;
     max-height: 90vh;
     display: flex;
@@ -356,7 +339,7 @@
 .paper-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .header-left {
@@ -374,11 +357,11 @@
 
 .paper-title-block {
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .paper-title-block h1 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: bold;
     margin: 0 0 0.5rem 0;
     letter-spacing: 0.5px;
@@ -391,41 +374,34 @@
 
 .paper-grid-container {
     width: 100%;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .paper-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
 }
 
 .paper-table th {
     font-weight: bold;
     text-align: center;
     background: #f1f5f9 !important;
-    padding: 0.5rem;
+    padding: 0.6rem;
     border: 1px solid #000000;
 }
 
 .paper-table td {
-    padding: 0.4rem;
+    padding: 0.5rem;
     border: 1px solid #000000;
-    vertical-align: middle;
+}
+
+.paper-table tr.group-header-row {
+    background-color: #e0f2fe !important;
 }
 
 .paper-table tr.grand-total-row {
     background-color: #f1f5f9 !important;
-}
-
-.paper-amount-words {
-    margin-bottom: 1.5rem;
-    font-size: 0.95rem;
-    text-align: left;
-}
-
-.words-text {
-    font-style: italic;
 }
 
 .paper-footer {
@@ -433,7 +409,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
 .signature-date {
@@ -444,11 +420,10 @@
 
 .signatures-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr);
     width: 100%;
     text-align: center;
     margin-top: 0.5rem;
-    gap: 0.5rem;
 }
 
 .signature-column {
@@ -459,38 +434,12 @@
 
 .signature-column .role {
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .signature-column .sign-desc {
     font-style: italic;
-    font-size: 0.8rem;
-}
-
-/* Details Modal Backdrop */
-.details-modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(9, 13, 22, 0.85);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    box-sizing: border-box;
-}
-
-.details-modal-content {
-    max-width: 1100px;
-    width: 100%;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    overflow: hidden;
+    font-size: 0.85rem;
 }
 
 /* @media print Configuration */
@@ -518,7 +467,7 @@
         box-shadow: none !important;
     }
 
-    /* Hide all main page content in summary report tab */
+    /* Hide all main page content in issues report tab */
     .report-container > :not(.print-preview-backdrop) {
         display: none !important;
     }
@@ -569,6 +518,12 @@
 
     .paper-table th {
         background: #f1f5f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .paper-table tr.group-header-row {
+        background-color: #e0f2fe !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

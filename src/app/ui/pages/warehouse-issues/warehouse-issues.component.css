@@ -18,6 +18,10 @@
     padding-bottom: 1rem;
 }
 
+.gap-col-left {
+    height: 32px;
+}
+
 .page-header h1 {
     font-size: 1.8rem;
     font-weight: 700;
@@ -198,8 +202,8 @@
 }
 
 .issue-grid-table input {
-    background: transparent;
-    border: 1px solid transparent;
+    background: rgba(15, 23, 42, 0.25);
+    border: 1px solid rgba(96, 165, 250, 0.3);
     border-radius: 0.25rem;
     padding: 0.4rem;
     color: #f8fafc;
@@ -208,12 +212,13 @@
     box-sizing: border-box;
     outline: none;
     transition: all 0.15s ease;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .issue-grid-table input:focus {
-    background: rgba(15, 23, 42, 0.8);
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    background: rgba(15, 23, 42, 0.85);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 0 10px rgba(59, 130, 246, 0.2);
 }
 
 .issue-grid-table .code-input {
@@ -619,10 +624,15 @@
     gap: 0.5rem;
 }
 
+.print-paper-sheet,
+.print-paper-sheet * {
+    font-family: "Times New Roman", Times, serif !important;
+    color: #000000 !important;
+}
+
 .print-paper-sheet {
     background: #ffffff;
     color: #000000;
-    font-family: "Times New Roman", Times, serif;
     padding: 2.5rem 3rem;
     box-sizing: border-box;
     border-radius: 4px;
@@ -660,6 +670,10 @@
 .header-right {
     text-align: center;
     width: 50%;
+}
+
+.header-left .dots {
+    color: #000000;
 }
 
 .header-right .dots {
@@ -708,7 +722,8 @@
 
 .paper-meta-info {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-around;
     gap: 0.5rem;
     margin-bottom: 2rem;
     font-size: 1rem;
@@ -789,9 +804,94 @@
 
 .paper-footer {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    justify-content: space-between;
+    width: 100%;
     margin-top: auto;
+    font-family: "Times New Roman", Times, serif;
+}
+
+.footer-col-left,
+.footer-col-right {
+    width: 45%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.signature-block {
+    width: 100%;
+    text-align: center;
+}
+
+.signature-block .role {
+    font-weight: bold;
+    font-size: 1.05rem;
+    color: #000000;
+}
+
+.spacing-block {
+    height: 100px;
+    /* Spacing for actual signature writing */
+}
+
+.signature-block {
+    text-align: center;
+    font-weight: bold;
+    color: #000000;
+    text-transform: uppercase;
+}
+
+.date-block {
+    text-align: center;
+    font-weight: bold;
+    color: #000000;
+    font-style: italic;
+}
+
+.paper-footer-new {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: auto;
+    font-family: "Times New Roman", Times, serif;
+}
+
+.footer-col-left-new,
+.footer-col-right-new {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.footer-col-right .date-block {
+    font-style: italic;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #000000;
+}
+
+.gap-col-left-new {
+    height: 25px;
+}
+
+.spacing-block-new {
+    height: 40px;
+}
+
+.signature-block-new {
+    text-align: center;
+    font-weight: bold;
+    color: #000000;
+    text-transform: uppercase;
+}
+
+.date-block-new {
+    text-align: center;
+    font-weight: bold;
+    color: #000000;
+    font-style: italic;
 }
 
 .signature-date {
@@ -829,33 +929,72 @@
 
 /* @media print override */
 @media print {
-    /* Hide everything on the app page */
-    body * {
-        visibility: hidden;
+
+    /* Hide topbar, sidebar, and other non-print page sections */
+    app-topbar,
+    app-sidebar {
+        display: none !important;
     }
 
-    /* Show only the paper sheet */
-    #printable-area,
-    #printable-area * {
-        visibility: visible;
+    .app-shell,
+    .app-body,
+    .content-area {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
-    #printable-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        box-shadow: none;
-        background: #ffffff;
-        color: #000000;
+    /* Hide all main page content in issues tab */
+    .warehouse-issues-container> :not(.print-preview-backdrop) {
+        display: none !important;
     }
 
-    /* Hide background headers and page numbers standard browsers add */
-    @page {
-        size: A4 portrait;
-        margin: 1.5cm 2cm;
+    /* Format backdrop and modal wrappers to be standard block elements without overlay styling */
+    .print-preview-backdrop {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: auto !important;
+    }
+
+    .print-preview-modal {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* Hide action buttons bar in preview modal */
+    .preview-actions-bar {
+        display: none !important;
+    }
+
+    /* Print sheet configuration */
+    .print-paper-sheet {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        overflow: visible !important;
     }
 
     .paper-table th {
@@ -864,7 +1003,366 @@
         print-color-adjust: exact;
     }
 
-    .signature-column .sign-desc {
-        color: #000000;
+    /* Adjust page settings */
+    @page {
+        size: A4 portrait;
+        margin: 1.5cm 2cm;
     }
+}
+
+/* Material Lookup Modal Styles */
+.material-lookup-modal {
+    max-width: 900px;
+    width: 100%;
+}
+
+.modal-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-header-title h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-header-title .title-icon {
+    color: #3b82f6;
+}
+
+.lookup-search-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    background: rgba(15, 23, 42, 0.3);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.lookup-search-field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-grow: 1;
+}
+
+.lookup-search-field label {
+    font-weight: 600;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+.lookup-search-field input {
+    background: rgba(9, 13, 22, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    color: #f8fafc;
+    font-size: 0.9rem;
+    width: 100%;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.lookup-search-field input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.lookup-table-box {
+    max-height: 40vh;
+    overflow-y: auto;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 0.5rem;
+    background: rgba(9, 13, 22, 0.2);
+}
+
+.lookup-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.lookup-list-table th {
+    background: rgba(15, 23, 42, 0.8);
+    color: #94a3b8;
+    font-weight: 600;
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+}
+
+.lookup-list-table td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.lookup-list-table tr:hover {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.lookup-list-table tr.selected-row {
+    background: rgba(59, 130, 246, 0.25) !important;
+    border-left: 3px solid #3b82f6;
+}
+
+.lookup-list-table tr.selected-row td {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Nested Modal Backdrop for higher z-index layering */
+.nested-modal-backdrop {
+    z-index: 1200;
+}
+
+/* Toast high layer to display over nested popup */
+.feedback-toast {
+    z-index: 1300 !important;
+}
+
+/* Add Material popup container and form layout */
+.add-material-modal {
+    max-width: 850px;
+    width: 100%;
+}
+
+.material-popup-form-container {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.5rem;
+}
+
+.material-popup-form-container .form-inputs-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.material-popup-form-container .form-row {
+    display: grid;
+    gap: 1rem;
+}
+
+.material-popup-form-container .form-row.two-columns {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.material-popup-form-container .form-row.two-columns-with-check {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.material-popup-form-container label.form-label-with-input {
+    display: flex;
+    flex-direction: column;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    gap: 0.35rem;
+}
+
+.material-popup-form-container label.full-width {
+    width: 100%;
+}
+
+.material-popup-form-container input[type="text"],
+.material-popup-form-container select {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    background: #090d16;
+    color: #f8fafc;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.material-popup-form-container select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.8rem center;
+    cursor: pointer;
+}
+
+.material-popup-form-container input[type="text"]:focus,
+.material-popup-form-container select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    background-color: #0f172a;
+}
+
+/* Checkbox Alignment inside popup */
+.material-popup-form-container .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding-top: 1.25rem;
+}
+
+.material-popup-form-container .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.material-popup-form-container .checkbox-label input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
+
+.material-popup-form-container .checkbox-label.disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+/* Form Image Area */
+.material-popup-form-container .form-image-side {
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0.35rem;
+}
+
+.material-popup-form-container .image-box {
+    width: 180px;
+    height: 180px;
+    background: #090d16;
+    border: 2px dashed rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.2s ease;
+}
+
+.material-popup-form-container .image-box:hover {
+    border-color: #3b82f6;
+}
+
+.material-popup-form-container .image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.material-popup-form-container .image-placeholder {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.material-popup-form-container .image-actions {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.material-popup-form-container .image-actions button {
+    flex: 1;
+    padding: 0.4rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 0.35rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.material-popup-form-container .btn-img-add {
+    background: #1e293b;
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+}
+
+.material-popup-form-container .btn-img-add:hover {
+    background: #0284c7;
+    color: #fff;
+}
+
+.material-popup-form-container .btn-img-remove {
+    background: #1e293b;
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.2) !important;
+}
+
+.material-popup-form-container .btn-img-remove:hover {
+    background: #dc2626;
+    color: #fff;
+}
+
+/* Custom Signatures Grid for printed sheet */
+.signatures-grid-custom {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr) !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin-top: 0.5rem !important;
+    row-gap: 4rem !important;
+}
+
+.sig-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sig-title {
+    font-size: 0.95rem !important;
+    color: #000000 !important;
+}
+
+.sig-desc {
+    font-style: italic !important;
+    font-size: 0.85rem !important;
+    color: #000000 !important;
+}
+
+.sig-c1 {
+    grid-column: 1 / 3 !important;
+}
+
+.sig-c2 {
+    grid-column: 3 / 5 !important;
+}
+
+.sig-c3 {
+    grid-column: 5 / 7 !important;
+}
+
+.sig-c4 {
+    grid-column: 2 / 4 !important;
+}
+
+.sig-c5 {
+    grid-column: 5 / 7 !important;
 }

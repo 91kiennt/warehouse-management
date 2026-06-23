@@ -64,7 +64,7 @@
             <tbody>
                 <tr *ngFor="let supply of supplies; let i = index" (click)="onSelectSupply(supply)"
                     [class.selected]="supply.id === selectedSupplyId">
-                    <td>{{ i + 1 }}</td>
+                    <td>{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
                     <td>{{ supply.code }}</td>
                     <td>{{ supply.name }}</td>
                     <td>{{ supply.parentWarehouse }}</td>
@@ -80,6 +80,34 @@
                 </tr>
             </tbody>
         </table>
+
+        <!-- Pagination Footer -->
+        <div class="pagination-footer">
+            <div class="pagination-size">
+                <span>Số dòng hiển thị:</span>
+                <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+                    <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+                </select>
+            </div>
+            <div class="pagination-info">
+                Hiển thị {{ showingStart }} - {{ showingEnd }} trong tổng số {{ totalItems }} bản ghi
+            </div>
+            <div class="pagination-controls">
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === 1" (click)="onPageChange(1)">
+                    &laquo;
+                </button>
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === 1" (click)="onPageChange(pageIndex - 1)">
+                    &lsaquo;
+                </button>
+                <span class="pagination-page-info">Trang {{ pageIndex }} / {{ totalPages }}</span>
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages" (click)="onPageChange(pageIndex + 1)">
+                    &rsaquo;
+                </button>
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages" (click)="onPageChange(totalPages)">
+                    &raquo;
+                </button>
+            </div>
+        </div>
     </section>
 
     <div class="modal-backdrop" *ngIf="showDeleteConfirm">

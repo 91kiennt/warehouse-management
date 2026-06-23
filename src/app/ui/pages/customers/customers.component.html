@@ -131,7 +131,7 @@
                 <tbody>
                     <tr *ngFor="let customer of customers; let i = index"
                         [class.selected]="selectedCustomerId === customer.id" (click)="onSelectCustomer(customer)">
-                        <td>{{ i + 1 }}</td>
+                        <td>{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
                         <td>{{ customer.code }}</td>
                         <td>{{ customer.name }}</td>
                         <td>{{ customer.phone }}</td>
@@ -144,6 +144,34 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="pagination-footer">
+            <div class="pagination-size">
+                <span>Số dòng hiển thị:</span>
+                <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+                    <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+                </select>
+            </div>
+            <div class="pagination-info">
+                Hiển thị {{ showingStart }} - {{ showingEnd }} trong tổng số {{ totalItems }} bản ghi
+            </div>
+            <div class="pagination-controls">
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === 1" (click)="onPageChange(1)">
+                    &laquo;
+                </button>
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === 1" (click)="onPageChange(pageIndex - 1)">
+                    &lsaquo;
+                </button>
+                <span class="pagination-page-info">Trang {{ pageIndex }} / {{ totalPages }}</span>
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages" (click)="onPageChange(pageIndex + 1)">
+                    &rsaquo;
+                </button>
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages" (click)="onPageChange(totalPages)">
+                    &raquo;
+                </button>
+            </div>
         </div>
     </section>
 

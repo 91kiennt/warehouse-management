@@ -66,12 +66,18 @@ export class MaterialsComponent implements OnInit {
     deletingMaterial: SavedMaterial | null = null;
     message = "";
     messageType: "success" | "error" = "success";
-    
+
+    // Pagination properties
+    pageSize = 10;
+    pageIndex = 1;
+    totalItems = 0;
+    pageSizeOptions = [10, 25, 50, 100];
+
     // Preset options
     units = ["Kg", "Cái", "Hộp", "Thùng", "Lít", "Mét"];
     currencies = ["đồng", "USD", "EUR"];
     valuationMethods = ["Bình quân cuối kỳ", "FIFO", "LIFO", "Đích danh"];
-    
+
     materialForm: MaterialForm = this.emptyForm();
 
     ngOnInit(): void {
@@ -102,8 +108,13 @@ export class MaterialsComponent implements OnInit {
 
     async loadMaterials(): Promise<void> {
         try {
-            const result = await invoke<SavedMaterial[]>("list_materials");
-            this.materials = result.map(m => ({
+            const limit = this.pageSize;
+            const offset = (this.pageIndex - 1) * this.pageSize;
+            const res = await invoke<{ items: SavedMaterial[], total: number }>("list_materials_paginated", {
+                limit,
+                offset
+            });
+            this.materials = res.items.map(m => ({
                 ...m,
                 parentCode: m.parentCode ?? (m as any).parent_code,
                 parentName: m.parentName ?? (m as any).parent_name,
@@ -114,11 +125,40 @@ export class MaterialsComponent implements OnInit {
                 imageData: m.imageData ?? (m as any).image_data,
                 mrpMps: m.mrpMps ?? (m as any).mrp_mps,
             }));
+            this.totalItems = res.total;
             this.materials.sort((a, b) => a.id - b.id);
         } catch (error) {
             this.showFeedback("Không thể tải danh sách vật tư.", "error");
             console.error(error);
         }
+    }
+
+    onPageChange(newPageIndex: number): void {
+        const maxPage = this.totalPages;
+        if (newPageIndex < 1 || newPageIndex > maxPage) {
+            return;
+        }
+        this.pageIndex = newPageIndex;
+        this.loadMaterials();
+    }
+
+    onPageSizeChange(newPageSize: number): void {
+        this.pageSize = newPageSize;
+        this.pageIndex = 1;
+        this.loadMaterials();
+    }
+
+    get totalPages(): number {
+        return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+    }
+
+    get showingStart(): number {
+        if (this.totalItems === 0) return 0;
+        return (this.pageIndex - 1) * this.pageSize + 1;
+    }
+
+    get showingEnd(): number {
+        return Math.min(this.pageIndex * this.pageSize, this.totalItems);
     }
 
     async loadSupplies(): Promise<void> {
@@ -143,6 +183,10 @@ export class MaterialsComponent implements OnInit {
         setTimeout(() => {
             this.message = "";
         }, 3000);
+    }
+
+    onCodeChange(val: string): void {
+        this.materialForm.barcode = val;
     }
 
     onAddNew(): void {
@@ -224,6 +268,13 @@ export class MaterialsComponent implements OnInit {
         }
     }
 
+    onDeleteSelected(): void {
+        const selected = this.materials.find(m => m.id === this.selectedMaterialId);
+        if (selected) {
+            this.onDelete(selected);
+        }
+    }
+
     onDelete(material: SavedMaterial): void {
         this.deletingMaterial = material;
         this.showDeleteConfirm = true;
@@ -237,6 +288,14 @@ export class MaterialsComponent implements OnInit {
             this.showFeedback(`Đã xóa vật tư "${this.deletingMaterial.name}".`);
             this.showDeleteConfirm = false;
             this.deletingMaterial = null;
+
+            // Handle boundary check: if we deleted the last item of the last page, go to the previous page
+            const totalAfterDelete = this.totalItems - 1;
+            const maxPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / this.pageSize));
+            if (this.pageIndex > maxPageAfterDelete) {
+                this.pageIndex = maxPageAfterDelete;
+            }
+
             await this.loadMaterials();
             this.onAddNew();
         } catch (error) {
