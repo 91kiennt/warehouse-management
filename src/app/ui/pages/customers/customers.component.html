@@ -119,7 +119,7 @@
             <table class="customer-table">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th>STT</th>
                         <th>Mã</th>
                         <th>Tên</th>
                         <th>Điện thoại</th>
@@ -161,14 +161,17 @@
                 <button type="button" class="pagination-btn" [disabled]="pageIndex === 1" (click)="onPageChange(1)">
                     &laquo;
                 </button>
-                <button type="button" class="pagination-btn" [disabled]="pageIndex === 1" (click)="onPageChange(pageIndex - 1)">
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === 1"
+                    (click)="onPageChange(pageIndex - 1)">
                     &lsaquo;
                 </button>
                 <span class="pagination-page-info">Trang {{ pageIndex }} / {{ totalPages }}</span>
-                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages" (click)="onPageChange(pageIndex + 1)">
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages"
+                    (click)="onPageChange(pageIndex + 1)">
                     &rsaquo;
                 </button>
-                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages" (click)="onPageChange(totalPages)">
+                <button type="button" class="pagination-btn" [disabled]="pageIndex === totalPages"
+                    (click)="onPageChange(totalPages)">
                     &raquo;
                 </button>
             </div>

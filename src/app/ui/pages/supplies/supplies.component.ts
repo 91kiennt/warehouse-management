@@ -99,8 +99,8 @@ export class SuppliesComponent implements OnInit {
         this.loadSupplies();
     }
 
-    onPageSizeChange(newPageSize: number): void {
-        this.pageSize = newPageSize;
+    onPageSizeChange(newPageSize: any): void {
+        this.pageSize = Number(newPageSize);
         this.pageIndex = 1;
         this.loadSupplies();
     }

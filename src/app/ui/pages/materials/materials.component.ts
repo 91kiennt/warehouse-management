@@ -142,8 +142,8 @@ export class MaterialsComponent implements OnInit {
         this.loadMaterials();
     }
 
-    onPageSizeChange(newPageSize: number): void {
-        this.pageSize = newPageSize;
+    onPageSizeChange(newPageSize: any): void {
+        this.pageSize = Number(newPageSize);
         this.pageIndex = 1;
         this.loadMaterials();
     }
