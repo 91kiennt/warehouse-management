@@ -444,6 +444,11 @@ input.flatpickr-custom-input:focus {
 
 /* @media print Configuration */
 @media print {
+    @page {
+        size: A4 landscape;
+        margin: 0 !important;
+    }
+
     html, body {
         height: auto !important;
         overflow: visible !important;

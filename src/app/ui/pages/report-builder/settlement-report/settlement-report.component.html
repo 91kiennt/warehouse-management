@@ -12,15 +12,17 @@
                     <option [ngValue]="13">Tùy chọn</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label>Từ ngày</label>
-                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')" (keyup.enter)="onDateBlur('start')" />
+                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')"
+                    (keyup.enter)="onDateBlur('start')" />
             </div>
 
             <div class="form-group">
                 <label>Đến ngày</label>
-                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')" (keyup.enter)="onDateBlur('end')" />
+                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')"
+                    (keyup.enter)="onDateBlur('end')" />
             </div>
         </div>
 
@@ -84,19 +86,21 @@
                             <td class="center-align"><strong>{{ row.materialCode }}</strong></td>
                             <td>{{ row.materialName }}</td>
                             <td class="center-align">{{ row.unit }}</td>
-                            <td class="right-align">{{ row.price !== 0 ? (row.price | number) : '-' }}</td>
-                            <td class="right-align"><strong>{{ row.quantity !== 0 ? (row.quantity | number) : '-' }}</strong></td>
-                            <td class="right-align"><strong>{{ row.amount !== 0 ? (row.amount | number) : '-' }}</strong></td>
+                            <td class="right-align">{{ row.price !== 0 ? (row.price | number) : '' }}</td>
+                            <td class="right-align"><strong>{{ row.quantity !== 0 ? (row.quantity | number) : ''
+                                    }}</strong></td>
+                            <td class="right-align"><strong>{{ row.amount !== 0 ? (row.amount | number) : '' }}</strong>
+                            </td>
                             <td>{{ row.note }}</td>
                         </tr>
                     </ng-container>
-                    
+
                     <!-- Grand Total Row -->
                     <tr class="grand-total-row">
                         <td colspan="4" class="center-align"><strong>Tổng cộng</strong></td>
                         <td class="right-align">-</td>
-                        <td class="right-align"><strong>{{ totalQty !== 0 ? (totalQty | number) : '-' }}</strong></td>
-                        <td class="right-align"><strong>{{ totalAmt !== 0 ? (totalAmt | number) : '-' }}</strong></td>
+                        <td class="right-align"><strong>{{ totalQty !== 0 ? (totalQty | number) : '' }}</strong></td>
+                        <td class="right-align"><strong>{{ totalAmt !== 0 ? (totalAmt | number) : '' }}</strong></td>
                         <td></td>
                     </tr>
 
@@ -133,11 +137,14 @@
             <div class="print-paper-sheet" id="printable-area">
                 <div class="paper-header">
                     <div class="header-left" style="text-align: center; width: 45%;">
-                        <div class="org-name" style="font-size: 0.85rem; font-weight: normal; line-height: 1.3; text-transform: uppercase;">
+                        <div class="org-name"
+                            style="font-size: 0.85rem; font-weight: normal; line-height: 1.3; text-transform: uppercase;">
                             {{ settingsService.settings()?.parentOrg || 'BỘ TƯ LỆNH CẢNH SÁT CƠ ĐỘNG' }}
                         </div>
-                        <div class="org-name" style="font-size: 0.85rem; font-weight: bold; line-height: 1.3; text-transform: uppercase; text-decoration: underline;">
-                            {{ settingsService.settings()?.subOrg || 'TRUNG TÂM HUẤN LUYỆN BỒI DƯỠNG NGHIỆP VỤ VÀ GIÁO DỤC NGHỀ NGHIỆP SỐ 1' }}
+                        <div class="org-name"
+                            style="font-size: 0.85rem; font-weight: bold; line-height: 1.3; text-transform: uppercase; text-decoration: underline;">
+                            {{ settingsService.settings()?.subOrg || 'TRUNG TÂM HUẤN LUYỆN BỒI DƯỠNG NGHIỆP VỤ VÀ GIÁO
+                            DỤC NGHỀ NGHIỆP SỐ 1' }}
                         </div>
                         <div class="doc-number" style="font-size: 0.9rem; margin-top: 0.3rem;">
                             Số: {{ settingsService.settings()?.docPrefix || '................' }}
@@ -147,7 +154,8 @@
                         <div class="org-name" style="font-size: 0.85rem; font-weight: bold; text-transform: uppercase;">
                             CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
                         </div>
-                        <div class="dept-name" style="font-size: 0.85rem; font-weight: bold; text-decoration: underline; margin-top: 0.1rem;">
+                        <div class="dept-name"
+                            style="font-size: 0.85rem; font-weight: bold; text-decoration: underline; margin-top: 0.1rem;">
                             Độc lập - Tự do - Hạnh phúc
                         </div>
                         <div class="signature-date" style="margin-top: 0.8rem; font-style: italic; font-size: 0.9rem;">
@@ -157,7 +165,8 @@
                 </div>
 
                 <div class="paper-title-block" style="margin-top: 1.5rem;">
-                    <h1 style="font-size: 1.25rem; font-weight: bold; text-transform: uppercase; margin-bottom: 0.2rem;">
+                    <h1
+                        style="font-size: 1.25rem; font-weight: bold; text-transform: uppercase; margin-bottom: 0.2rem;">
                         BÁO CÁO QUYẾT TOÁN
                     </h1>
                     <h2 style="font-size: 1.15rem; font-weight: bold; text-transform: uppercase; margin-top: 0;">
@@ -165,16 +174,19 @@
                     </h2>
                 </div>
 
-                <div class="paper-intro-text" style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; text-align: left;">
+                <div class="paper-intro-text"
+                    style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; text-align: left;">
                     <div class="recipient-row" style="margin-left: 6rem; margin-bottom: 0.6rem;">
                         <span style="font-weight: normal;">Kính gửi:</span>
-                        <div style="display: inline-block; vertical-align: top; margin-left: 0.5rem; font-weight: bold;">
+                        <div
+                            style="display: inline-block; vertical-align: top; margin-left: 0.5rem; font-weight: bold;">
                             - Lãnh đạo Phòng Tài chính<br>
                             - Lãnh đạo Phòng Y tế
                         </div>
                     </div>
                     <p style="margin: 0.4rem 0; text-indent: 1.5rem;">
-                        - {{ settingsService.settings()?.subOrg || 'Trung tâm Huấn luyện, bồi dưỡng nghiệp vụ và giáo dục nghề nghiệp số 1' }} báo cáo quyết toán thuốc, VTTH
+                        - {{ settingsService.settings()?.subOrg || 'Trung tâm Huấn luyện, bồi dưỡng nghiệp vụ và giáo
+                        dục nghề nghiệp số 1' }} báo cáo quyết toán thuốc, VTTH
                         <ng-container *ngIf="selectedMonth === 13; else tempMonth">
                             từ ngày {{ startDateDisplay }} đến ngày {{ endDateDisplay }}
                         </ng-container>
@@ -200,11 +212,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let item of getPrintItems()" [class.group-header-row]="item.isHeader" [class.padding-row]="item.isPadding">
+                            <tr *ngFor="let item of getPrintItems()" [class.group-header-row]="item.isHeader"
+                                [class.padding-row]="item.isPadding">
                                 <!-- Group Header Row -->
                                 <ng-container *ngIf="item.isHeader">
                                     <td class="center-align"><strong>{{ item.romanIndex }}</strong></td>
-                                    <td colspan="7" style="text-align: left; font-weight: bold; text-transform: none;">{{ item.groupName }}</td>
+                                    <td colspan="7" style="text-align: left; font-weight: bold; text-transform: none;">
+                                        {{ item.groupName }}</td>
                                 </ng-container>
 
                                 <!-- Normal / Padding Row -->
@@ -213,9 +227,14 @@
                                     <td class="center-align">{{ item.materialCode }}</td>
                                     <td style="text-align: left;">{{ item.materialName }}</td>
                                     <td class="center-align">{{ item.unit }}</td>
-                                    <td class="right-align">{{ item.price !== 0 ? (item.price | number) : (item.isPadding ? '0' : '-') }}</td>
-                                    <td class="right-align"><strong>{{ item.quantity !== null && item.quantity !== 0 ? (item.quantity | number) : (item.quantity === 0 || item.isPadding ? '-' : '-') }}</strong></td>
-                                    <td class="right-align"><strong>{{ item.amount !== null && item.amount !== 0 ? (item.amount | number) : (item.amount === 0 || item.isPadding ? '-' : '-') }}</strong></td>
+                                    <td class="right-align">{{ item.price !== 0 ? (item.price | number) :
+                                        (item.isPadding ? '0' : '-') }}</td>
+                                    <td class="right-align"><strong>{{ item.quantity !== null && item.quantity !== 0 ?
+                                            (item.quantity | number) : (item.quantity === 0 || item.isPadding ? '-' :
+                                            '-') }}</strong></td>
+                                    <td class="right-align"><strong>{{ item.amount !== null && item.amount !== 0 ?
+                                            (item.amount | number) : (item.amount === 0 || item.isPadding ? '-' : '-')
+                                            }}</strong></td>
                                     <td>{{ item.note }}</td>
                                 </ng-container>
                             </tr>
@@ -224,7 +243,8 @@
                 </div>
 
                 <div class="paper-footer" style="margin-top: 1.5rem;">
-                    <div class="signatures-grid" style="grid-template-columns: repeat(4, 1fr); gap: 0.4rem; font-size: 0.8rem;">
+                    <div class="signatures-grid"
+                        style="grid-template-columns: repeat(4, 1fr); gap: 0.4rem; font-size: 0.8rem;">
                         <div class="signature-column">
                             <span class="role" style="font-weight: bold;">CHỈ HUY BAN CTHC</span>
                             <span class="sign-desc">(Ký, họ tên)</span>

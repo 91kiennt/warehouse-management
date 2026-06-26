@@ -376,6 +376,11 @@
 
 /* @media print Configuration */
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 0 !important;
+    }
+
     html, body {
         height: auto !important;
         overflow: visible !important;
