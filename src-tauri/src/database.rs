@@ -4,88 +4,147 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomerInput {
+    /// Mã đối tác / khách hàng (Duy nhất)
     pub code: String,
+    /// Tên đối tác / khách hàng
     pub name: String,
+    /// Địa chỉ đối tác / khách hàng
     pub address: String,
+    /// Mã số thuế đối tác
     pub tax_id: String,
+    /// Số tài khoản ngân hàng
     pub bank_account: String,
+    /// Tên ngân hàng thụ hưởng
     pub bank_name: String,
+    /// Số điện thoại liên hệ
     pub phone: String,
+    /// Số fax
     pub fax: String,
+    /// Địa chỉ thư điện tử (Email)
     pub email: String,
+    /// Hạn mức công nợ cho phép đối với đối tác này
     pub credit_limit: f64,
+    /// Người giám sát / Phụ trách đối tác
     pub supervisor: String,
+    /// Ngày bắt đầu hợp tác
     pub start_date: String,
+    /// Ngày kết thúc hợp tác
     pub end_date: String,
+    /// Hộ khẩu thường trú (Trong trường hợp đối tác cá nhân)
     pub permanent_residence: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedCustomer {
+    /// Khóa chính tự tăng của đối tác
     pub id: i64,
+    /// Mã đối tác / khách hàng (Duy nhất)
     pub code: String,
+    /// Tên đối tác / khách hàng
     pub name: String,
+    /// Địa chỉ đối tác / khách hàng
     pub address: String,
+    /// Mã số thuế đối tác
     pub tax_id: String,
+    /// Số tài khoản ngân hàng
     pub bank_account: String,
+    /// Tên ngân hàng thụ hưởng
     pub bank_name: String,
+    /// Số điện thoại liên hệ
     pub phone: String,
+    /// Số fax
     pub fax: String,
+    /// Địa chỉ thư điện tử (Email)
     pub email: String,
+    /// Hạn mức công nợ cho phép đối với đối tác này
     pub credit_limit: f64,
+    /// Người giám sát / Phụ trách đối tác
     pub supervisor: String,
+    /// Ngày bắt đầu hợp tác
     pub start_date: String,
+    /// Ngày kết thúc hợp tác
     pub end_date: String,
+    /// Hộ khẩu thường trú (Trong trường hợp đối tác cá nhân)
     pub permanent_residence: String,
+    /// Thời gian tạo đối tác trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SupplyInput {
+    /// Mã kho vật tư (Duy nhất, ví dụ: KHO-YTE, KHO-QUANKHI)
     pub code: String,
+    /// Tên gọi chi tiết kho
     pub name: String,
+    /// Mã kho tổng quản lý cấp trên (nếu có)
     pub parent_warehouse: String,
+    /// Ngày bắt đầu đưa kho vào sử dụng
     pub start_date: String,
+    /// Ngày ngừng hoạt động kho
     pub end_date: String,
+    /// Người chịu trách nhiệm quản lý kho (Thủ kho)
     pub manager: String,
+    /// Địa chỉ vật lý của kho hàng
     pub location: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedSupply {
+    /// Khóa chính tự tăng của kho
     pub id: i64,
+    /// Mã kho vật tư (Duy nhất, ví dụ: KHO-YTE, KHO-QUANKHI)
     pub code: String,
+    /// Tên gọi chi tiết kho
     pub name: String,
+    /// Mã kho tổng quản lý cấp trên (nếu có)
     pub parent_warehouse: String,
+    /// Ngày bắt đầu đưa kho vào sử dụng
     pub start_date: String,
+    /// Ngày ngừng hoạt động kho
     pub end_date: String,
+    /// Người chịu trách nhiệm quản lý kho (Thủ kho)
     pub manager: String,
+    /// Địa chỉ vật lý của kho hàng
     pub location: String,
+    /// Thời gian khởi tạo kho trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmployeeInput {
+    /// Mã nhân viên (Duy nhất)
     pub code: String,
+    /// Họ và tên nhân viên
     pub name: String,
+    /// Ngày tháng năm sinh
     #[serde(alias = "date_of_birth")]
     pub date_of_birth: String,
+    /// Địa chỉ liên lạc của nhân viên
     pub address: String,
+    /// Số điện thoại di động
     pub phone: String,
+    /// Số fax nội bộ
     pub fax: String,
+    /// Email công vụ
     pub email: String,
+    /// Số CCCD / CMND
     #[serde(alias = "id_number")]
     pub id_number: String,
+    /// Ngày cấp thẻ căn cước
     #[serde(alias = "id_issued_date")]
     pub id_issued_date: String,
+    /// Nơi cấp thẻ căn cước
     #[serde(alias = "id_issued_place")]
     pub id_issued_place: String,
+    /// Giới tính nhân viên
     pub gender: String,
+    /// Tên người quản lý trực tiếp
     pub superior: String,
+    /// Ngày bắt đầu làm việc / Hiệu lực
     #[serde(alias = "effective_from_date")]
     pub effective_from_date: String,
 }
@@ -93,196 +152,321 @@ pub struct EmployeeInput {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedEmployee {
+    /// Khóa chính tự tăng
     pub id: i64,
+    /// Mã nhân viên (Duy nhất)
     pub code: String,
+    /// Họ và tên nhân viên
     pub name: String,
+    /// Ngày tháng năm sinh
     pub date_of_birth: String,
+    /// Địa chỉ liên lạc của nhân viên
     pub address: String,
+    /// Số điện thoại di động
     pub phone: String,
+    /// Số fax nội bộ
     pub fax: String,
+    /// Email công vụ
     pub email: String,
+    /// Số CCCD / CMND
     pub id_number: String,
+    /// Ngày cấp thẻ căn cước
     pub id_issued_date: String,
+    /// Nơi cấp thẻ căn cước
     pub id_issued_place: String,
+    /// Giới tính nhân viên
     pub gender: String,
+    /// Tên người quản lý trực tiếp
     pub superior: String,
+    /// Ngày bắt đầu làm việc / Hiệu lực
     pub effective_from_date: String,
+    /// Thời gian tạo hồ sơ nhân viên trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReportItem {
+    /// Tên hoặc mã của sản phẩm / vật tư trong báo cáo
     pub product: String,
+    /// Số lượng sản phẩm / vật tư
     pub quantity: i64,
+    /// Đơn giá sản phẩm / vật tư
     pub price: f64,
+    /// Thành tiền (Số lượng * Đơn giá)
     pub total: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReportData {
+    /// Kho thực hiện báo cáo
     pub warehouse: String,
+    /// Người phụ trách / Thủ kho thực hiện xuất báo cáo
     pub manager: String,
+    /// Ngày tháng lập báo cáo
     pub date: String,
+    /// Ghi chú / Giải trình báo cáo
     pub notes: String,
+    /// Danh sách chi tiết các mặt hàng trong báo cáo
     pub items: Vec<ReportItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReportInput {
+    /// Mã loại mẫu báo cáo (Ví dụ: strength-report, settlement-report)
     pub template: String,
+    /// Tiêu đề của báo cáo
     pub title: String,
+    /// Dữ liệu chi tiết của báo cáo
     pub data: ReportData,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SavedReport {
+    /// Khóa chính tự tăng
     pub id: i64,
+    /// Mã loại mẫu báo cáo (Ví dụ: strength-report, settlement-report)
     pub template: String,
+    /// Tiêu đề của báo cáo
     pub title: String,
+    /// Dữ liệu chi tiết của báo cáo
     pub data: ReportData,
+    /// Thời gian xuất báo cáo trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MaterialInput {
+    /// Mã vật tư (Duy nhất, dùng để liên kết giao dịch)
     pub code: String,
+    /// Mã vạch vật tư (Dùng để quét nhanh hoặc hiển thị)
     pub barcode: String,
+    /// Tên chi tiết vật tư / hàng hóa
     pub name: String,
+    /// Mã nhóm vật tư cấp trên
     pub parent_code: String,
+    /// Tên nhóm vật tư (Dùng để gom nhóm phân loại vật tư)
     pub parent_name: String,
+    /// Đơn vị tính (Ví dụ: Cái, Thùng, Mét, Tấn, Lọ, v.v.)
     pub unit: String,
+    /// Loại tiền tệ áp dụng (Mặc định: VND)
     pub currency: String,
+    /// Mã kho chứa mặc định của vật tư
     pub warehouse: String,
+    /// Phương pháp tính giá xuất kho (Ví dụ: FIFO, Bình quân gia quyền)
     pub valuation_method: String,
+    /// Đặc tính kỹ thuật hoặc thông tin bổ sung của vật tư
     pub features: String,
+    /// Cấu hình thuế (Ví dụ: Có thuế, Không thuế)
     pub taxable: String,
+    /// Cấu hình kế hoạch nhu cầu vật tư (1: Hoạt động, 0: Tắt)
     pub mrp_mps: i64,
+    /// Cờ xác định có tính toán tồn kho hay không (1: Có, 0: Không)
     pub calculate_inventory: i64,
+    /// Ngày bắt đầu áp dụng theo dõi
     pub start_date: String,
+    /// Ngày kết thúc theo dõi
     pub end_date: String,
+    /// Chuỗi dữ liệu ảnh đại diện (Định dạng Base64)
     pub image_data: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedMaterial {
+    /// Khóa chính tự tăng
     pub id: i64,
+    /// Mã vật tư (Duy nhất, dùng để liên kết giao dịch)
     pub code: String,
+    /// Mã vạch vật tư (Dùng để quét nhanh hoặc hiển thị)
     pub barcode: String,
+    /// Tên chi tiết vật tư / hàng hóa
     pub name: String,
+    /// Mã nhóm vật tư cấp trên
     pub parent_code: String,
+    /// Tên nhóm vật tư (Dùng để gom nhóm phân loại vật tư)
     pub parent_name: String,
+    /// Đơn vị tính (Ví dụ: Cái, Thùng, Mét, Tấn, Lọ, v.v.)
     pub unit: String,
+    /// Loại tiền tệ áp dụng (Mặc định: VND)
     pub currency: String,
+    /// Mã kho chứa mặc định của vật tư
     pub warehouse: String,
+    /// Phương pháp tính giá xuất kho (Ví dụ: FIFO, Bình quân gia quyền)
     pub valuation_method: String,
+    /// Đặc tính kỹ thuật hoặc thông tin bổ sung của vật tư
     pub features: String,
+    /// Cấu hình thuế (Ví dụ: Có thuế, Không thuế)
     pub taxable: String,
+    /// Cấu hình kế hoạch nhu cầu vật tư (1: Hoạt động, 0: Tắt)
     pub mrp_mps: i64,
+    /// Cờ xác định có tính toán tồn kho hay không (1: Có, 0: Không)
     pub calculate_inventory: i64,
+    /// Ngày bắt đầu áp dụng theo dõi
     pub start_date: String,
+    /// Ngày kết thúc theo dõi
     pub end_date: String,
+    /// Chuỗi dữ liệu ảnh đại diện (Định dạng Base64)
     pub image_data: String,
+    /// Thời gian tạo vật tư trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginatedCustomers {
+    /// Danh sách kết quả phân trang
     pub items: Vec<SavedCustomer>,
+    /// Tổng số bản ghi thỏa mãn điều kiện
     pub total: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginatedSupplies {
+    /// Danh sách kết quả phân trang
     pub items: Vec<SavedSupply>,
+    /// Tổng số bản ghi thỏa mãn điều kiện
     pub total: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginatedMaterials {
+    /// Danh sách kết quả phân trang
     pub items: Vec<SavedMaterial>,
+    /// Tổng số bản ghi thỏa mãn điều kiện
     pub total: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WarehouseReceiptInput {
+    /// Số phiếu nhập kho (Duy nhất, tự sinh hoặc nhập tay)
     pub receipt_number: String,
+    /// Ngày ghi sổ / Ngày thực hiện nhập kho
     pub posting_date: String,
+    /// Số hóa đơn / Số chứng từ kèm theo
     pub invoice_number: String,
+    /// Ngày phát hành hóa đơn đi kèm
     pub invoice_date: String,
+    /// Diễn giải lý do nhập kho chung của phiếu
     pub description: String,
+    /// Họ tên người giao hàng
     pub delivery_person: String,
+    /// Danh sách chứng từ đi kèm (Ví dụ: Hóa đơn đỏ, biên bản bàn giao)
     pub accompanied_doc: String,
+    /// Địa chỉ / Đơn vị giao nhận hàng
     pub department: String,
+    /// Lý do chi tiết nhập kho
     pub reason: String,
+    /// Mã kho thực hiện nhập hàng
     pub warehouse_location: String,
-    pub items: String, // JSON serialized list of items
+    /// Danh sách vật tư chi tiết: Chuỗi JSON lưu trữ mảng các sản phẩm nhập, số lượng chứng từ, số lượng thực nhập, đơn giá, thành tiền, v.v.
+    pub items: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedWarehouseReceipt {
+    /// Khóa chính tự tăng
     pub id: i64,
+    /// Số phiếu nhập kho (Duy nhất, tự sinh hoặc nhập tay)
     pub receipt_number: String,
+    /// Ngày ghi sổ / Ngày thực hiện nhập kho
     pub posting_date: String,
+    /// Số hóa đơn / Số chứng từ kèm theo
     pub invoice_number: String,
+    /// Ngày phát hành hóa đơn đi kèm
     pub invoice_date: String,
+    /// Diễn giải lý do nhập kho chung của phiếu
     pub description: String,
+    /// Họ tên người giao hàng
     pub delivery_person: String,
+    /// Danh sách chứng từ đi kèm (Ví dụ: Hóa đơn đỏ, biên bản bàn giao)
     pub accompanied_doc: String,
+    /// Địa chỉ / Đơn vị giao nhận hàng
     pub department: String,
+    /// Lý do chi tiết nhập kho
     pub reason: String,
+    /// Mã kho thực hiện nhập hàng
     pub warehouse_location: String,
+    /// Danh sách vật tư chi tiết: Chuỗi JSON lưu trữ mảng các sản phẩm nhập, số lượng chứng từ, số lượng thực nhập, đơn giá, thành tiền, v.v.
     pub items: String,
+    /// Thời gian tạo phiếu trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WarehouseIssueInput {
+    /// Số phiếu xuất kho (Duy nhất)
     pub issue_number: String,
+    /// Ngày ghi sổ / Ngày thực hiện xuất kho
     pub posting_date: String,
+    /// Số chứng từ / Số yêu cầu xuất
     pub invoice_number: String,
+    /// Ngày lập yêu cầu xuất
     pub invoice_date: String,
+    /// Diễn giải lý do xuất kho chung
     pub description: String,
+    /// Chứng từ, văn bản chỉ đạo kèm theo khi xuất
     pub accompanied_doc: String,
+    /// Họ tên người nhận hàng
     pub receiver_name: String,
+    /// Bộ phận / Đơn vị nhận hàng
     pub department: String,
+    /// Lý do chi tiết xuất kho
     pub reason: String,
+    /// Mã kho thực hiện xuất hàng
     pub warehouse_location: String,
-    pub items: String, // JSON serialized list of items
+    /// Danh sách vật tư chi tiết: Chuỗi JSON lưu trữ mảng các sản phẩm xuất, số lượng yêu cầu, số lượng thực xuất, đơn giá, thành tiền, v.v.
+    pub items: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedWarehouseIssue {
+    /// Khóa chính tự tăng
     pub id: i64,
+    /// Số phiếu xuất kho (Duy nhất)
     pub issue_number: String,
+    /// Ngày ghi sổ / Ngày thực hiện xuất kho
     pub posting_date: String,
+    /// Số chứng từ / Số yêu cầu xuất
     pub invoice_number: String,
+    /// Ngày lập yêu cầu xuất
     pub invoice_date: String,
+    /// Diễn giải lý do xuất kho chung
     pub description: String,
+    /// Chứng từ, văn bản chỉ đạo kèm theo khi xuất
     pub accompanied_doc: String,
+    /// Họ tên người nhận hàng
     pub receiver_name: String,
+    /// Bộ phận / Đơn vị nhận hàng
     pub department: String,
+    /// Lý do chi tiết xuất kho
     pub reason: String,
+    /// Mã kho thực hiện xuất hàng
     pub warehouse_location: String,
+    /// Danh sách vật tư chi tiết: Chuỗi JSON lưu trữ mảng các sản phẩm xuất, số lượng yêu cầu, số lượng thực xuất, đơn giá, thành tiền, v.v.
     pub items: String,
+    /// Thời gian tạo phiếu xuất trên hệ thống (Chuỗi ISO 8601)
     pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnitSettings {
+    /// Tên đầy đủ cơ quan chủ quản cấp trên (Ví dụ: BỘ TƯ LỆNH CẢNH SÁT CƠ ĐỘNG)
     pub parent_org: String,
+    /// Tên viết tắt cơ quan cấp trên hoặc Đơn vị quản lý (Ví dụ: BỘ TƯ LỆNH CSCĐ hoặc BAN CHÍNH TRỊ HẬU CẦN)
     pub parent_org_short: String,
+    /// Tên đầy đủ đơn vị báo cáo / Doanh nghiệp (Ví dụ: Trung tâm Huấn luyện... hoặc Công ty TNHH An Ngọc Lan)
     pub sub_org: String,
+    /// Tên viết tắt đơn vị báo cáo hoặc Bộ phận trực thuộc (Ví dụ: TRUNG TÂM HL... hoặc BỘ PHẬN Y TẾ)
     pub sub_org_short: String,
+    /// Ký hiệu / Số hiệu văn bản mặc định trên báo cáo (Ví dụ: BCTL-TTHL1- BCTHC)
     pub doc_prefix: String,
 }
 
