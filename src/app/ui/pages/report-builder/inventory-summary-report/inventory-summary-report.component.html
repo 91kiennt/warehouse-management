@@ -8,7 +8,8 @@
             <div class="form-group">
                 <label>Thời gian</label>
                 <select [(ngModel)]="selectedMonth" (change)="onMonthChange()">
-                    <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+                    <option *ngFor="let m of months" [ngValue]="m.value">{{ m.label }}</option>
+                    <option [ngValue]="13">Tùy chọn</option>
                 </select>
             </div>
 
@@ -187,7 +188,7 @@
     </div>
 
     <!-- Part 4: Printable Preview Modal (Landscape A4) -->
-    <div class="print-preview-backdrop" *ngIf="showPrintModal">
+    <div class="print-preview-backdrop print-landscape-layout" *ngIf="showPrintModal">
         <div class="print-preview-modal glass-panel">
             <div class="preview-actions-bar print-hide">
                 <span class="preview-title">XEM TRƯỚC BẢN IN</span>
@@ -209,13 +210,13 @@
             <div class="print-paper-sheet" id="printable-area">
                 <div class="paper-header">
                     <div class="header-left">
-                        <div class="org-name">BAN CHÍNH TRỊ HẬU CẦN</div>
-                        <div class="dept-name">BỘ PHẬN QUẢN KHÍ</div>
+                        <div class="org-name">{{ settingsService.settings()?.parentOrgShort || 'BAN CHÍNH TRỊ HẬU CẦN' }}</div>
+                        <div class="dept-name">{{ settingsService.settings()?.subOrgShort || 'BỘ PHẬN QUẢN KHÍ' }}</div>
                     </div>
                 </div>
 
                 <div class="paper-title-block">
-                    <h1>BẢNG TỔNG HỢP XUẤT, NHẬP, TỒN THÁNG {{ selectedMonth }}/{{ selectedYear }}</h1>
+                    <h1>BẢNG TỔNG HỢP XUẤT, NHẬP, TỒN {{ selectedMonth == 13 ? 'KỲ TÙY CHỌN' : ('THÁNG ' + selectedMonth + '/' + selectedYear) }}</h1>
                     <div class="paper-date">
                         Từ ngày: {{ startDate | date:'dd/MM/yyyy' }} Đến ngày: {{ endDate | date:'dd/MM/yyyy' }}
                     </div>

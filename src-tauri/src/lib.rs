@@ -4,6 +4,7 @@ use crate::database::{
     CustomerInput, Database, EmployeeInput, ReportData, ReportInput, SavedCustomer, SavedEmployee,
     SavedSupply, SupplyInput, MaterialInput, SavedMaterial, WarehouseReceiptInput, SavedWarehouseReceipt,
     WarehouseIssueInput, SavedWarehouseIssue, PaginatedCustomers, PaginatedSupplies, PaginatedMaterials,
+    UnitSettings,
 };
 use base64::Engine;
 use directories::ProjectDirs;
@@ -299,6 +300,20 @@ fn delete_warehouse_receipt(state: tauri::State<'_, AppState>, id: i64) -> Resul
 }
 
 #[tauri::command]
+fn get_material_stock(
+    state: tauri::State<'_, AppState>,
+    material_code: String,
+    warehouse_code: String,
+) -> Result<f64, String> {
+    state
+        .db
+        .lock()
+        .map_err(|e| e.to_string())?
+        .get_material_stock(&material_code, &warehouse_code)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn save_warehouse_issue(
     state: tauri::State<'_, AppState>,
     issue: WarehouseIssueInput,
@@ -405,6 +420,27 @@ fn save_excel_buffer(
     Ok(file_path.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn get_unit_settings(state: tauri::State<'_, AppState>) -> Result<Option<UnitSettings>, String> {
+    state
+        .db
+        .lock()
+        .map_err(|e| e.to_string())
+        .and_then(|db| db.get_unit_settings().map_err(|e| e.to_string()))
+}
+
+#[tauri::command]
+fn save_unit_settings(
+    state: tauri::State<'_, AppState>,
+    settings: UnitSettings,
+) -> Result<UnitSettings, String> {
+    state
+        .db
+        .lock()
+        .map_err(|e| e.to_string())
+        .and_then(|db| db.save_unit_settings(settings).map_err(|e| e.to_string()))
+}
+
 fn get_app_data_dir() -> PathBuf {
     let proj_dirs = ProjectDirs::from("com", "tauri", "tauri-warehouse-management")
         .expect("Could not determine app data directory");
@@ -451,10 +487,13 @@ pub fn run() {
             list_warehouse_receipts,
             update_warehouse_receipt,
             delete_warehouse_receipt,
+            get_material_stock,
             save_warehouse_issue,
             list_warehouse_issues,
             update_warehouse_issue,
             delete_warehouse_issue,
+            get_unit_settings,
+            save_unit_settings,
         ])
         .plugin(tauri_plugin_opener::init())
         .run(context)

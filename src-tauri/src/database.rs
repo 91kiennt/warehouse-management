@@ -276,6 +276,16 @@ pub struct SavedWarehouseIssue {
     pub created_at: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UnitSettings {
+    pub parent_org: String,
+    pub parent_org_short: String,
+    pub sub_org: String,
+    pub sub_org_short: String,
+    pub doc_prefix: String,
+}
+
 pub struct Database {
     conn: Connection,
 }
@@ -454,6 +464,22 @@ impl Database {
 
             self.conn.execute("PRAGMA user_version = 2", [])?;
             println!("[TAURI BE migrate] Database migrated to Version 2 (Dynamic fields and status drops processed)");
+        }
+
+        if version < 3 {
+            self.conn.execute_batch(
+                "CREATE TABLE IF NOT EXISTS unit_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parent_org TEXT NOT NULL,
+                    parent_org_short TEXT NOT NULL,
+                    sub_org TEXT NOT NULL,
+                    sub_org_short TEXT NOT NULL,
+                    doc_prefix TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );"
+            )?;
+            self.conn.execute("PRAGMA user_version = 3", [])?;
+            println!("[TAURI BE migrate] Database migrated to Version 3 (unit_settings table created)");
         }
 
         Ok(())
@@ -1451,5 +1477,130 @@ impl Database {
         self.conn
             .execute("DELETE FROM warehouse_issues WHERE id = ?1", params![id])?;
         Ok(())
+    }
+
+    pub fn get_material_stock(&self, material_code: &str, warehouse_code: &str) -> Result<f64> {
+        #[derive(Deserialize, Debug)]
+        struct DbItem {
+            warehouse: String,
+            #[serde(rename = "materialCode")]
+            material_code: String,
+            #[serde(rename = "quantityReal")]
+            quantity_real: f64,
+        }
+
+        let mut total_in = 0.0;
+        let mut total_out = 0.0;
+
+        // Query all items from receipts
+        let mut stmt = self.conn.prepare("SELECT items FROM warehouse_receipts")?;
+        let receipt_items_list = stmt.query_map([], |row| {
+            let items_str: String = row.get(0)?;
+            Ok(items_str)
+        })?;
+
+        for items_str_res in receipt_items_list {
+            if let Ok(items_str) = items_str_res {
+                if let Ok(items) = serde_json::from_str::<Vec<DbItem>>(&items_str) {
+                    for item in items {
+                        if item.material_code.to_uppercase() == material_code.to_uppercase()
+                            && item.warehouse.to_uppercase() == warehouse_code.to_uppercase()
+                        {
+                            total_in += item.quantity_real;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Query all items from issues
+        let mut stmt = self.conn.prepare("SELECT items FROM warehouse_issues")?;
+        let issue_items_list = stmt.query_map([], |row| {
+            let items_str: String = row.get(0)?;
+            Ok(items_str)
+        })?;
+
+        for items_str_res in issue_items_list {
+            if let Ok(items_str) = items_str_res {
+                if let Ok(items) = serde_json::from_str::<Vec<DbItem>>(&items_str) {
+                    for item in items {
+                        if item.material_code.to_uppercase() == material_code.to_uppercase()
+                            && item.warehouse.to_uppercase() == warehouse_code.to_uppercase()
+                        {
+                            total_out += item.quantity_real;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(total_in - total_out)
+    }
+
+    pub fn get_unit_settings(&self) -> Result<Option<UnitSettings>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT parent_org, parent_org_short, sub_org, sub_org_short, doc_prefix FROM unit_settings LIMIT 1"
+        )?;
+        let mut rows = stmt.query([])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(UnitSettings {
+                parent_org: row.get(0)?,
+                parent_org_short: row.get(1)?,
+                sub_org: row.get(2)?,
+                sub_org_short: row.get(3)?,
+                doc_prefix: row.get(4)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn save_unit_settings(&self, settings: UnitSettings) -> Result<UnitSettings> {
+        let created_at = chrono::Utc::now().to_rfc3339();
+        let exists: bool = self.conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM unit_settings WHERE id = 1)",
+            [],
+            |row| row.get(0),
+        )?;
+
+        if exists {
+            self.conn.execute(
+                "UPDATE unit_settings SET 
+                    parent_org = ?1, 
+                    parent_org_short = ?2, 
+                    sub_org = ?3, 
+                    sub_org_short = ?4, 
+                    doc_prefix = ?5 
+                 WHERE id = 1",
+                params![
+                    settings.parent_org,
+                    settings.parent_org_short,
+                    settings.sub_org,
+                    settings.sub_org_short,
+                    settings.doc_prefix,
+                ],
+            )?;
+        } else {
+            self.conn.execute(
+                "INSERT INTO unit_settings (
+                    id, 
+                    parent_org, 
+                    parent_org_short, 
+                    sub_org, 
+                    sub_org_short, 
+                    doc_prefix, 
+                    created_at
+                ) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    settings.parent_org,
+                    settings.parent_org_short,
+                    settings.sub_org,
+                    settings.sub_org_short,
+                    settings.doc_prefix,
+                    created_at,
+                ],
+            )?;
+        }
+        Ok(settings)
     }
 }

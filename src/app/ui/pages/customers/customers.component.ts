@@ -40,11 +40,12 @@ interface SavedCustomer {
 }
 
 import { FlatpickrDirective } from "../../../utils/flatpickr.directive";
+import { EnterFocusNextDirective } from "../../../utils/enter-focus-next.directive";
 
 @Component({
     standalone: true,
     selector: "app-customers",
-    imports: [CommonModule, FormsModule, FlatpickrDirective],
+    imports: [CommonModule, FormsModule, FlatpickrDirective, EnterFocusNextDirective],
     templateUrl: "./customers.component.html",
     styleUrls: ["./customers.component.css"],
 })

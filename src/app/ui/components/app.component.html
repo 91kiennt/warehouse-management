@@ -1,9 +1,17 @@
-<div class="app-shell">
-  <app-topbar></app-topbar>
-  <div class="app-body">
-    <app-sidebar></app-sidebar>
-    <main class="content-area">
-      <router-outlet></router-outlet>
-    </main>
+@if (showOnboarding()) {
+  <app-onboarding-modal [isEditMode]="false"></app-onboarding-modal>
+} @else {
+  <div class="app-shell">
+    <app-topbar></app-topbar>
+    <div class="app-body">
+      <app-sidebar></app-sidebar>
+      <main class="content-area">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   </div>
-</div>
+
+  @if (settingsService.showEditModal()) {
+    <app-onboarding-modal [isEditMode]="true" (closed)="settingsService.showEditModal.set(false)"></app-onboarding-modal>
+  }
+}

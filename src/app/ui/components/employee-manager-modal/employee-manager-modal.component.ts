@@ -21,11 +21,12 @@ export interface EmployeeForm {
 }
 
 import { FlatpickrDirective } from "../../../utils/flatpickr.directive";
+import { EnterFocusNextDirective } from "../../../utils/enter-focus-next.directive";
 
 @Component({
     selector: 'app-employee-manager-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, FlatpickrDirective],
+    imports: [CommonModule, FormsModule, FlatpickrDirective, EnterFocusNextDirective],
     templateUrl: './employee-manager-modal.component.html',
     styleUrls: ['./employee-manager-modal.component.css'],
 })

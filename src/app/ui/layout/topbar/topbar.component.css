@@ -45,16 +45,32 @@
     align-items: center;
 }
 
-.theme-toggle {
-    border: none;
-    background: #10b981;
-    color: #ffffff;
+.settings-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.5rem 0.85rem;
-    border-radius: 999px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
-.theme-toggle:hover {
-    transform: translateY(-1px);
+.settings-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #60a5fa;
+    border-color: #60a5fa;
+}
+
+.settings-btn svg {
+    stroke: currentColor;
+    transition: transform 0.3s ease;
+}
+
+.settings-btn:hover svg {
+    transform: rotate(45deg);
 }

@@ -118,3 +118,146 @@ input.flatpickr-custom-input:focus {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
     background-color: #0f172a !important;
 }
+
+/* Global Print Styles */
+@media print {
+    /* Hide layout sections globally */
+    app-topbar,
+    app-sidebar,
+    .sidebar,
+    .topbar,
+    nav,
+    .print-hide,
+    .btn,
+    button,
+    .btn-close,
+    .modal-header .btn-close,
+    .preview-actions-bar,
+    .filter-panel,
+    .report-table-panel,
+    .saved-list,
+    .status-msg {
+        display: none !important;
+    }
+
+    /* Reset global page styles for print */
+    html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Reset layout wrappers to block display to expand fully */
+    .app-shell,
+    .app-body,
+    .content-area,
+    main {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    /* Target components content container to expand full width */
+    .report-container,
+    .warehouse-receipts-container,
+    .warehouse-issues-container,
+    .report-page {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    /* Target modal overlay wrapper to expand full page */
+    .print-preview-backdrop,
+    .modal-backdrop.print-preview-backdrop {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: auto !important;
+        overflow: visible !important;
+    }
+
+    .print-preview-modal {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    /* The actual printable sheet */
+    .print-paper-sheet {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        padding: 1.5cm 2cm !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        overflow: visible !important;
+    }
+
+    .print-landscape-layout .print-paper-sheet {
+        padding: 1.2cm 1.5cm !important;
+    }
+
+    /* Avoid page-breaks inside tables, repeat headers */
+    table, tr, td, th {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    
+    thead {
+        display: table-header-group !important;
+    }
+}
+
+/* Default A4 print settings */
+@page {
+    size: A4 portrait;
+    margin: 0 !important;
+}
+
+/* Named page layouts for orientation */
+@page portrait-page {
+    size: A4 portrait;
+    margin: 0 !important;
+}
+
+@page landscape-page {
+    size: A4 landscape;
+    margin: 0 !important;
+}
+
+.print-portrait-layout {
+    page: portrait-page !important;
+}
+
+.print-landscape-layout {
+    page: landscape-page !important;
+}

@@ -923,12 +923,6 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
-
-    /* Adjust page settings */
-    @page {
-        size: A4 portrait;
-        margin: 1.5cm 2cm;
-    }
 }
 
 /* Material Lookup Modal Styles */

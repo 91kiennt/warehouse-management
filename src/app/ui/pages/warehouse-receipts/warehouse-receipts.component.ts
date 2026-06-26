@@ -1,8 +1,9 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { invoke } from "@tauri-apps/api/core";
 import * as ExcelJS from "exceljs";
+import { UnitSettingsService } from "../../../utils/unit-settings.service";
 
 interface ReceiptItem {
     warehouse: string;
@@ -50,15 +51,18 @@ interface SavedReceipt {
 }
 
 import { FlatpickrDirective } from "../../../utils/flatpickr.directive";
+import { EnterFocusNextDirective } from "../../../utils/enter-focus-next.directive";
 
 @Component({
     standalone: true,
     selector: "app-warehouse-receipts",
-    imports: [CommonModule, FormsModule, FlatpickrDirective],
+    imports: [CommonModule, FormsModule, FlatpickrDirective, EnterFocusNextDirective],
     templateUrl: "./warehouse-receipts.component.html",
     styleUrls: ["./warehouse-receipts.component.css"],
 })
 export class WarehouseReceiptsComponent implements OnInit {
+    settingsService = inject(UnitSettingsService);
+
     // Form fields
     receiptNumber = "";
     postingDate = "";
@@ -94,6 +98,13 @@ export class WarehouseReceiptsComponent implements OnInit {
     filteredMaterials: SavedMaterial[] = [];
     selectedPopupMaterial: SavedMaterial | null = null;
     activeRowIndex: number | null = null;
+
+    // Warehouse Popup Modal States
+    showWarehouseModal = false;
+    searchWarehouseTerm = "";
+    filteredSupplies: SavedSupply[] = [];
+    selectedPopupSupply: SavedSupply | null = null;
+    activeWarehouseRowIndex: number | null = null;
 
     // Material Form Options & States
     units = ["Kg", "Cái", "Hộp", "Thùng", "Lít", "Mét"];
@@ -806,6 +817,8 @@ export class WarehouseReceiptsComponent implements OnInit {
         row.unit = match.unit;
         row.warehouse = match.warehouse;
 
+        this.updateRowStockQty(this.activeRowIndex);
+
         this.checkAndAppendRow(this.activeRowIndex);
 
         this.showMaterialModal = false;
@@ -967,5 +980,82 @@ export class WarehouseReceiptsComponent implements OnInit {
                 }
             }
         }, 50);
+    }
+
+    openWarehousePopup(index: number): void {
+        this.activeWarehouseRowIndex = index;
+        this.searchWarehouseTerm = "";
+        this.selectedPopupSupply = null;
+        this.filteredSupplies = [...this.supplies];
+        this.showWarehouseModal = true;
+    }
+
+    closeWarehousePopup(): void {
+        this.showWarehouseModal = false;
+        this.focusNextInputAfterWarehouseSelect();
+    }
+
+    selectPopupSupplyRow(supply: SavedSupply): void {
+        this.selectedPopupSupply = supply;
+    }
+
+    async onGetWarehouseData(): Promise<void> {
+        await this.loadSupplies();
+        const search = this.searchWarehouseTerm.trim().toUpperCase();
+        if (search === "") {
+            this.filteredSupplies = [...this.supplies];
+        } else {
+            this.filteredSupplies = this.supplies.filter(s =>
+                s.code.toUpperCase().includes(search) ||
+                s.name.toUpperCase().includes(search)
+            );
+        }
+    }
+
+    confirmSelectWarehouse(): void {
+        if (!this.selectedPopupSupply || this.activeWarehouseRowIndex === null) return;
+        const row = this.items[this.activeWarehouseRowIndex];
+        row.warehouse = this.selectedPopupSupply.code;
+
+        this.updateRowStockQty(this.activeWarehouseRowIndex);
+
+        this.showWarehouseModal = false;
+        this.focusNextInputAfterWarehouseSelect();
+    }
+
+    focusNextInputAfterWarehouseSelect(): void {
+        if (this.activeWarehouseRowIndex === null) return;
+        const idx = this.activeWarehouseRowIndex;
+        setTimeout(() => {
+            const tableBody = document.querySelector('.receipt-grid-table tbody');
+            if (!tableBody) return;
+            const rows = tableBody.querySelectorAll('tr');
+            if (idx < rows.length) {
+                const row = rows[idx];
+                const rowInputs = Array.from(row.querySelectorAll('input')) as HTMLInputElement[];
+                const nameInputIndex = rowInputs.findIndex(inp => inp.placeholder === 'Tên vật tư');
+                if (nameInputIndex !== -1) {
+                    rowInputs[nameInputIndex].focus();
+                }
+            }
+        }, 50);
+    }
+
+    async updateRowStockQty(index: number): Promise<void> {
+        const row = this.items[index];
+        if (!row.materialCode || !row.warehouse) {
+            row.stockQty = 0;
+            return;
+        }
+        try {
+            const stock = await invoke<number>("get_material_stock", {
+                materialCode: row.materialCode,
+                warehouseCode: row.warehouse
+            });
+            row.stockQty = stock;
+        } catch (error) {
+            console.error("Lỗi khi lấy lượng tồn:", error);
+            row.stockQty = 0;
+        }
     }
 }

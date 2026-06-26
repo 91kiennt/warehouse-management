@@ -10,6 +10,7 @@ import { ReviewReportComponent } from "../ui/pages/report-builder/review-report/
 import { StrengthReportComponent } from "../ui/pages/report-builder/strength-report/strength-report.component";
 import { InventoryIssueReportComponent } from "../ui/pages/report-builder/inventory-issue-report/inventory-issue-report.component";
 import { InventoryReceiptReportComponent } from "../ui/pages/report-builder/inventory-receipt-report/inventory-receipt-report.component";
+import { SettlementReportComponent } from "../ui/pages/report-builder/settlement-report/settlement-report.component";
 
 export const routes: Routes = [
     { path: "", redirectTo: "customers", pathMatch: "full" },
@@ -56,6 +57,10 @@ export const routes: Routes = [
     {
         path: "inventory-issue-report",
         component: InventoryIssueReportComponent,
+    },
+    {
+        path: "settlement-report",
+        component: SettlementReportComponent,
     },
     { path: "**", redirectTo: "customers" },
 ];

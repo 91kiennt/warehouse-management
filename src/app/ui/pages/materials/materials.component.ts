@@ -50,11 +50,12 @@ interface SavedSupply {
 }
 
 import { FlatpickrDirective } from "../../../utils/flatpickr.directive";
+import { EnterFocusNextDirective } from "../../../utils/enter-focus-next.directive";
 
 @Component({
     standalone: true,
     selector: "app-materials",
-    imports: [CommonModule, FormsModule, FlatpickrDirective],
+    imports: [CommonModule, FormsModule, FlatpickrDirective, EnterFocusNextDirective],
     templateUrl: "./materials.component.html",
     styleUrls: ["./materials.component.css"],
 })

@@ -578,12 +578,6 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
-
-    /* Adjust page settings for Landscape horizontal A4 */
-    @page {
-        size: A4 landscape;
-        margin: 1.2cm 1.5cm;
-    }
 }
 
 /* Responsiveness */

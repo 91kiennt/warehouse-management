@@ -5,7 +5,7 @@
             <button class="close-btn" (click)="closeModal()">×</button>
         </div>
 
-        <div class="modal-content">
+        <div class="modal-content" appEnterFocusNext>
             <!-- Message Alert -->
             <div class="alert" [ngClass]="messageType === 'success' ? 'alert-success' : 'alert-error'" *ngIf="message">
                 {{ message }}

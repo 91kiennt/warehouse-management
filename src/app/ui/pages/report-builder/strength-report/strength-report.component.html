@@ -1,131 +1,328 @@
-<div class="report-page">
-    <div class="report-form-panel">
-        <div class="panel-header">
-            <h2>Nhập liệu báo cáo</h2>
-            <p>Điền thông tin chung và các dòng sản phẩm.</p>
+<div class="report-container">
+    <!-- Part 1: Parameters Filter Panel -->
+    <div class="filter-panel glass-panel print-hide">
+        <h2 class="form-title">BÁO CÁO THỰC LỰC</h2>
+
+        <div class="form-grid">
+            <!-- Row 1: Time, From Date, To Date -->
+            <div class="form-group">
+                <label>Thời gian</label>
+                <select [(ngModel)]="selectedMonth" (change)="onMonthChange()">
+                    <option *ngFor="let m of months" [ngValue]="m.value">{{ m.label }}</option>
+                    <option [ngValue]="13">Tùy chọn</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Từ ngày</label>
+                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')"
+                    (keyup.enter)="onDateBlur('start')" />
+            </div>
+
+            <div class="form-group">
+                <label>Đến ngày</label>
+                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')"
+                    (keyup.enter)="onDateBlur('end')" />
+            </div>
         </div>
 
-        <form class="report-form" (ngSubmit)="onSave()">
-            <div class="form-group">
-                <label>Template</label>
-                <input [(ngModel)]="report.template" name="template" />
+        <!-- Action Row -->
+        <div class="action-row">
+            <div class="actions-buttons">
+                <button class="btn btn-primary" (click)="onGetData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Xem
+                </button>
+                <button class="btn btn-success" (click)="onPrintReport()" [disabled]="reportRows.length === 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    In
+                </button>
             </div>
-            <div class="form-group">
-                <label>Title</label>
-                <input [(ngModel)]="report.title" name="title" />
-            </div>
-            <div class="form-row two-columns">
-                <div class="form-group">
-                    <label>Warehouse</label>
-                    <input [(ngModel)]="report.data.warehouse" name="warehouse" />
-                </div>
-                <div class="form-group">
-                    <label>Manager</label>
-                    <input [(ngModel)]="report.data.manager" name="manager" />
-                </div>
-            </div>
-            <div class="form-row two-columns">
-                <div class="form-group">
-                    <label>Date</label>
-                    <input type="text" appFlatpickr [(ngModel)]="report.data.date" name="date" />
-                </div>
-                <div class="form-group">
-                    <label>Notes</label>
-                    <input [(ngModel)]="report.data.notes" name="notes" />
+
+            <span class="status-msg" [class.error]="messageType === 'error'" *ngIf="message">{{ message }}</span>
+        </div>
+    </div>
+
+    <!-- Part 2: Synthesis Report Grid Table -->
+    <div class="report-table-panel glass-panel print-hide" *ngIf="showReportTable">
+        <div class="panel-header-row">
+            <h3 class="panel-subtitle">KẾT QUẢ BÁO CÁO THỰC LỰC</h3>
+            <span class="row-count">Tổng số vật tư: {{ reportRows.length }}</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="report-grid-table">
+                <thead>
+                    <tr>
+                        <th rowspan="3" style="width: 40px;">STT</th>
+                        <th rowspan="3" style="width: 80px;">Mã HH</th>
+                        <th rowspan="3">Tên hàng hóa</th>
+                        <th rowspan="3" style="width: 60px;">ĐVT</th>
+                        <th colspan="3">Thực lực ngày {{ getPreviousDateDisplay() }}</th>
+                        <th colspan="6">Số lượng</th>
+                        <th colspan="3">Thực lực ngày {{ endDateDisplay }}</th>
+                    </tr>
+                    <tr>
+                        <th colspan="3">Tồn kỳ trước</th>
+                        <th colspan="3">Tăng</th>
+                        <th colspan="3">Giảm</th>
+                        <th colspan="3"></th>
+                    </tr>
+                    <tr>
+                        <th style="width: 60px;">SL</th>
+                        <th style="width: 90px;">Đơn giá</th>
+                        <th style="width: 100px;">Thành tiền</th>
+                        <th style="width: 60px;">SL</th>
+                        <th style="width: 90px;">Đơn giá</th>
+                        <th style="width: 100px;">Thành tiền</th>
+                        <th style="width: 60px;">SL</th>
+                        <th style="width: 90px;">Đơn giá</th>
+                        <th style="width: 100px;">Thành tiền</th>
+                        <th style="width: 60px;">SL</th>
+                        <th style="width: 90px;">Đơn giá</th>
+                        <th style="width: 105px;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of reportRows; let i = index">
+                        <td class="center-align">{{ i + 1 }}</td>
+                        <td class="center-align"><strong>{{ row.materialCode }}</strong></td>
+                        <td>{{ row.materialName }}</td>
+                        <td class="center-align">{{ row.unit }}</td>
+
+                        <!-- Tồn kỳ trước -->
+                        <td class="right-align" [class.muted-text]="row.openingQty === 0">{{ row.openingQty || '' }}
+                        </td>
+                        <td class="right-align">{{ row.openingQty > 0 ? (row.openingPrice | number:'1.0-0') : '' }}</td>
+                        <td class="right-align" [class.muted-text]="row.openingAmt === 0">{{ (row.openingAmt > 0 ?
+                            (row.openingAmt | number:'1.0-0') : '') }}</td>
+
+                        <!-- Tăng -->
+                        <td class="right-align" [class.muted-text]="row.importQty === 0">{{ row.importQty || '' }}</td>
+                        <td class="right-align">{{ row.importQty > 0 ? (row.importPrice | number:'1.0-0') : '' }}</td>
+                        <td class="right-align" [class.muted-text]="row.importAmt === 0">{{ (row.importAmt > 0 ?
+                            (row.importAmt | number:'1.0-0') : '') }}</td>
+
+                        <!-- Giảm -->
+                        <td class="right-align" [class.muted-text]="row.exportQty === 0">{{ row.exportQty || '' }}</td>
+                        <td class="right-align">{{ row.exportQty > 0 ? (row.exportPrice | number:'1.0-0') : '' }}</td>
+                        <td class="right-align" [class.muted-text]="row.exportAmt === 0">{{ (row.exportAmt > 0 ?
+                            (row.exportAmt | number:'1.0-0') : '') }}</td>
+
+                        <!-- Thực lực -->
+                        <td class="right-align"><strong>{{ row.closingQty || '' }}</strong></td>
+                        <td class="right-align"><strong>{{ row.closingQty > 0 ? (row.closingPrice | number:'1.0-0') : ''
+                                }}</strong></td>
+                        <td class="right-align"><strong>{{ (row.closingAmt > 0 ? (row.closingAmt | number:'1.0-0') : '')
+                                }}</strong></td>
+                    </tr>
+                    <!-- Grand Total Row -->
+                    <tr class="grand-total-row">
+                        <td class="center-align" colspan="4"><strong>Cộng</strong></td>
+                        <td class="right-align"><strong>{{ totalOpeningQty | number }}</strong></td>
+                        <td></td>
+                        <td class="right-align"><strong>{{ totalOpeningAmt | number:'1.0-0' }}</strong></td>
+
+                        <td class="right-align"><strong>{{ totalImportQty | number }}</strong></td>
+                        <td></td>
+                        <td class="right-align"><strong>{{ totalImportAmt | number:'1.0-0' }}</strong></td>
+
+                        <td class="right-align"><strong>{{ totalExportQty | number }}</strong></td>
+                        <td></td>
+                        <td class="right-align"><strong>{{ totalExportAmt | number:'1.0-0' }}</strong></td>
+
+                        <td class="right-align"><strong>{{ totalClosingQty | number }}</strong></td>
+                        <td></td>
+                        <td class="right-align"><strong>{{ totalClosingAmt | number:'1.0-0' }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Part 3: Printable Preview Modal (Landscape A4) -->
+    <div class="print-preview-backdrop print-landscape-layout" *ngIf="showPrintModal">
+        <div class="print-preview-modal glass-panel">
+            <div class="preview-actions-bar print-hide">
+                <span class="preview-title">XEM TRƯỚC BẢN IN BÁO CÁO THỰC LỰC VŨ KHÍ, CÔNG CỤ HỖ TRỢ</span>
+                <div class="preview-actions">
+                    <button class="btn btn-primary" (click)="triggerSystemPrint()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        In thực tế
+                    </button>
+                    <button class="btn btn-danger" (click)="closePrintModal()">Đóng bản xem</button>
                 </div>
             </div>
 
-            <div class="table-panel">
-                <div class="table-header">
-                    <h3>Chi tiết sản phẩm</h3>
-                    <button type="button" class="btn-secondary" (click)="addRow()">Thêm hàng</button>
+            <!-- Printable Paper Sheet -->
+            <div class="print-paper-sheet" id="printable-area">
+                <div class="paper-header">
+                    <div class="header-left">
+                        <div class="org-name" style="text-transform: uppercase;">{{ settingsService.settings()?.parentOrgShort || 'BỘ TƯ LỆNH CSCĐ' }}</div>
+                        <div class="dept-name" style="font-weight: bold; text-transform: uppercase;">{{ settingsService.settings()?.subOrgShort || 'TRUNG TÂM HL, BDNV&GDNN SỐ 1' }}</div>
+                        <div class="dept-name">Số: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ settingsService.settings()?.docPrefix || 'BCTL-TTHL1- BCTHC' }}</div>
+                    </div>
+                    <div class="header-right" style="text-align: center;">
+                        <div class="org-name" style="text-transform: uppercase;">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                        </div>
+                        <div class="dept-name" style="font-weight: bold; text-decoration: underline;">Độc lập - Tự do -
+                            Hạnh phúc</div>
+                        <div class="signature-date" style="margin-top: 0.5rem; font-style: italic; padding-right: 0;">
+                            Hà Nội, ngày...... tháng...... năm 20...
+                        </div>
+                    </div>
                 </div>
-                <div class="table-scroll">
-                    <table>
+
+                <div class="paper-title-block" style="margin-top: 1rem; text-align: center;">
+                    <h1 style="font-size: 1.4rem; font-weight: bold; text-transform: uppercase; margin-bottom: 0.2rem;">
+                        BÁO CÁO</h1>
+                    <h2 style="font-size: 1.15rem; font-weight: bold; margin: 0 0 0.8rem 0;">Thực lực vũ khí, vật liệu
+                        nổ, công cụ hỗ trợ và thiết bị kỹ thuật nghiệp vụ</h2>
+                    <div class="paper-date" style="font-weight: normal; font-size: 0.95rem; margin-bottom: 0.5rem;">
+                        Kính gửi: - Lãnh đạo Bộ Tư lệnh Cảnh sát cơ động
+                    </div>
+                </div>
+
+                <div style="text-align: right; font-size: 0.75rem; font-style: italic; margin-bottom: 0.25rem;">
+                    Đvt:
+                </div>
+
+                <div class="paper-grid-container">
+                    <table class="paper-table">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Total</th>
-                                <th></th>
+                                <th rowspan="3" style="width: 30px;">STT</th>
+                                <th rowspan="3" style="width: 70px;">Mã HH</th>
+                                <th rowspan="3">Tên hàng hóa</th>
+                                <th rowspan="3" style="width: 45px;">ĐVT</th>
+                                <th colspan="3">Thực lực ngày {{ getPreviousDateDisplay() }}</th>
+                                <th colspan="6">Số lượng</th>
+                                <th colspan="3">Thực lực ngày {{ endDateDisplay }}</th>
+                            </tr>
+                            <tr>
+                                <th colspan="3">Tồn kỳ trước</th>
+                                <th colspan="3">Tăng</th>
+                                <th colspan="3">Giảm</th>
+                                <th colspan="3"></th>
+                            </tr>
+                            <tr>
+                                <th style="width: 40px;">SL</th>
+                                <th style="width: 70px;">Đơn giá</th>
+                                <th style="width: 80px;">Thành tiền</th>
+                                <th style="width: 40px;">SL</th>
+                                <th style="width: 70px;">Đơn giá</th>
+                                <th style="width: 80px;">Thành tiền</th>
+                                <th style="width: 40px;">SL</th>
+                                <th style="width: 70px;">Đơn giá</th>
+                                <th style="width: 80px;">Thành tiền</th>
+                                <th style="width: 40px;">SL</th>
+                                <th style="width: 70px;">Đơn giá</th>
+                                <th style="width: 85px;">Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let item of report.data.items; let i = index">
-                                <td>{{ i + 1 }}</td>
-                                <td><input [(ngModel)]="item.product" name="product-{{ i }}" /></td>
-                                <td><input type="number" [(ngModel)]="item.quantity" name="quantity-{{ i }}"
-                                        (ngModelChange)="updateItemTotal(item)" /></td>
-                                <td><input type="number" [(ngModel)]="item.price" name="price-{{ i }}"
-                                        (ngModelChange)="updateItemTotal(item)" /></td>
-                                <td>{{ item.total | number: '1.0-2' }}</td>
-                                <td><button type="button" class="btn-danger" (click)="removeRow(i)">Xóa</button></td>
+                            <tr *ngFor="let row of reportRows; let i = index">
+                                <td class="center-align">{{ i + 1 }}</td>
+                                <td class="center-align"><strong>{{ row.materialCode }}</strong></td>
+                                <td>{{ row.materialName }}</td>
+                                <td class="center-align">{{ row.unit }}</td>
+
+                                <!-- Tồn kỳ trước -->
+                                <td class="right-align">{{ row.openingQty || '' }}</td>
+                                <td class="right-align">{{ row.openingQty > 0 ? (row.openingPrice | number:'1.0-0') : ''
+                                    }}</td>
+                                <td class="right-align">{{ (row.openingAmt > 0 ? (row.openingAmt | number:'1.0-0') : '')
+                                    }}</td>
+
+                                <!-- Tăng -->
+                                <td class="right-align">{{ row.importQty || '' }}</td>
+                                <td class="right-align">{{ row.importQty > 0 ? (row.importPrice | number:'1.0-0') : ''
+                                    }}</td>
+                                <td class="right-align">{{ (row.importAmt > 0 ? (row.importAmt | number:'1.0-0') : '')
+                                    }}</td>
+
+                                <!-- Giảm -->
+                                <td class="right-align">{{ row.exportQty || '' }}</td>
+                                <td class="right-align">{{ row.exportQty > 0 ? (row.exportPrice | number:'1.0-0') : ''
+                                    }}</td>
+                                <td class="right-align">{{ (row.exportAmt > 0 ? (row.exportAmt | number:'1.0-0') : '')
+                                    }}</td>
+
+                                <!-- Thực lực -->
+                                <td class="right-align"><strong>{{ row.closingQty || '' }}</strong></td>
+                                <td class="right-align"><strong>{{ row.closingQty > 0 ? (row.closingPrice |
+                                        number:'1.0-0') : '' }}</strong></td>
+                                <td class="right-align"><strong>{{ (row.closingAmt > 0 ? (row.closingAmt |
+                                        number:'1.0-0') : '') }}</strong></td>
+                            </tr>
+                            <!-- Grand Total Row -->
+                            <tr class="grand-total-row">
+                                <td class="center-align" colspan="4"><strong>Cộng</strong></td>
+                                <td class="right-align"><strong>{{ totalOpeningQty | number }}</strong></td>
+                                <td></td>
+                                <td class="right-align"><strong>{{ totalOpeningAmt | number:'1.0-0' }}</strong></td>
+
+                                <td class="right-align"><strong>{{ totalImportQty | number }}</strong></td>
+                                <td></td>
+                                <td class="right-align"><strong>{{ totalImportAmt | number:'1.0-0' }}</strong></td>
+
+                                <td class="right-align"><strong>{{ totalExportQty | number }}</strong></td>
+                                <td></td>
+                                <td class="right-align"><strong>{{ totalExportAmt | number:'1.0-0' }}</strong></td>
+
+                                <td class="right-align"><strong>{{ totalClosingQty | number }}</strong></td>
+                                <td></td>
+                                <td class="right-align"><strong>{{ totalClosingAmt | number:'1.0-0' }}</strong></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Number to Words -->
+                <div class="paper-amount-words" style="margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    <strong>Bằng chữ: </strong> <span class="words-text" style="font-style: italic;">{{
+                        totalClosingAmtWords }}</span>
+                </div>
+
+                <div class="paper-intro-text" style="font-size: 0.95rem; margin-bottom: 2rem;">
+                    TTHI1 báo cáo Lãnh đạo Bộ Tư lệnh, Lãnh đạo phòng tổng hợp chung
+                </div>
+
+                <div class="paper-footer">
+                    <div class="signatures-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="signature-column">
+                            <span class="role">CHỈ HUY BAN CTHC</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">THỦ KHO</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">KẾ TOÁN</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên)</span>
+                        </div>
+                        <div class="signature-column">
+                            <span class="role">KT. GIÁM ĐỐC / PHÓ GIÁM ĐỐC</span>
+                            <span class="sign-desc">(Ký, ghi rõ họ tên, đóng dấu)</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="submit-row">
-                <button type="submit" class="btn-primary" [disabled]="saving">Lưu</button>
-                <span class="status-text">{{ message }}</span>
-            </div>
-        </form>
-    </div>
-
-    <div class="report-preview-panel" *ngIf="selectedReport">
-        <div class="panel-header">
-            <h2>Preview báo cáo</h2>
-            <button class="btn-primary" type="button" (click)="onExport(selectedReport)">Xuất Excel</button>
-        </div>
-
-        <div class="report-preview">
-            <h3>{{ selectedReport.title }}</h3>
-            <div class="preview-meta">
-                <p><strong>Template:</strong> {{ selectedReport.template }}</p>
-                <p><strong>Warehouse:</strong> {{ selectedReport.data.warehouse }}</p>
-                <p><strong>Manager:</strong> {{ selectedReport.data.manager }}</p>
-                <p><strong>Date:</strong> {{ selectedReport.data.date }}</p>
-                <p><strong>Notes:</strong> {{ selectedReport.data.notes }}</p>
-            </div>
-
-            <table class="preview-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Sản phẩm</th>
-                        <th>Số lượng</th>
-                        <th>Giá</th>
-                        <th>Tổng</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let item of selectedReport.data.items; let i = index">
-                        <td>{{ i + 1 }}</td>
-                        <td>{{ item.product }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.price | number: '1.0-2' }}</td>
-                        <td>{{ item.total | number: '1.0-2' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="preview-summary">
-                <div>Tổng cộng</div>
-                <div>{{ selectedReportTotal | number: '1.0-2' }}</div>
-            </div>
-        </div>
-
-        <div class="saved-list">
-            <h4>Danh sách báo cáo</h4>
-            <ul>
-                <li *ngFor="let report of savedReports">
-                    <button type="button" class="link-button" (click)="setPreview(report)">#{{ report.id }} - {{
-                        report.title }}</button>
-                </li>
-            </ul>
         </div>
     </div>
 </div>

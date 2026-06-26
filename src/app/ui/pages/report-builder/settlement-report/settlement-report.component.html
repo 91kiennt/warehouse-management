@@ -1,7 +1,7 @@
 <div class="report-container">
     <!-- Part 1: Parameters Filter Panel -->
     <div class="filter-panel glass-panel print-hide">
-        <h2 class="form-title">BÁO CÁO TỒN KHO</h2>
+        <h2 class="form-title">BÁO CÁO QUYẾT TOÁN</h2>
 
         <div class="form-grid">
             <!-- Row 1: Time, From Date, To Date -->
@@ -53,7 +53,7 @@
     <!-- Part 2: Grid Table -->
     <div class="report-table-panel glass-panel print-hide" *ngIf="showReportTable">
         <div class="panel-header-row">
-            <h3 class="panel-subtitle">KẾT QUẢ THỐNG KÊ TỒN KHO</h3>
+            <h3 class="panel-subtitle">KẾT QUẢ QUYẾT TOÁN XUẤT KHO</h3>
             <span class="row-count">Tổng số vật tư: {{ reportRows.length }}</span>
         </div>
 
@@ -102,7 +102,7 @@
 
                     <tr *ngIf="reportRows.length === 0">
                         <td colspan="8" class="center-align text-muted" style="padding: 2rem;">
-                            Không có dữ liệu tồn kho để hiển thị.
+                            Không có dữ liệu quyết toán để hiển thị.
                         </td>
                     </tr>
                 </tbody>
@@ -114,7 +114,7 @@
     <div class="print-preview-backdrop print-portrait-layout" *ngIf="showPrintModal">
         <div class="print-preview-modal glass-panel">
             <div class="preview-actions-bar print-hide">
-                <span class="preview-title">XEM TRƯỚC BẢN IN BÁO CÁO TỒN KHO</span>
+                <span class="preview-title">XEM TRƯỚC BẢN IN BÁO CÁO QUYẾT TOÁN</span>
                 <div class="preview-actions">
                     <button class="btn btn-primary" (click)="triggerSystemPrint()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -158,10 +158,10 @@
 
                 <div class="paper-title-block" style="margin-top: 1.5rem;">
                     <h1 style="font-size: 1.25rem; font-weight: bold; text-transform: uppercase; margin-bottom: 0.2rem;">
-                        BÁO CÁO TỒN KHO
+                        BÁO CÁO QUYẾT TOÁN
                     </h1>
                     <h2 style="font-size: 1.15rem; font-weight: bold; text-transform: uppercase; margin-top: 0;">
-                        VẬT TƯ TIÊU HAO TÂN BINH K62 NĂM {{ selectedYear }}
+                        THUỐC, VẬT TƯ TIÊU HAO TÂN BINH K62 NĂM {{ selectedYear }}
                     </h2>
                 </div>
 
@@ -174,7 +174,7 @@
                         </div>
                     </div>
                     <p style="margin: 0.4rem 0; text-indent: 1.5rem;">
-                        - {{ settingsService.settings()?.subOrg || 'Trung tâm Huấn luyện, bồi dưỡng nghiệp vụ và giáo dục nghề nghiệp số 1' }} báo cáo tồn thuốc, VTTH
+                        - {{ settingsService.settings()?.subOrg || 'Trung tâm Huấn luyện, bồi dưỡng nghiệp vụ và giáo dục nghề nghiệp số 1' }} báo cáo quyết toán thuốc, VTTH
                         <ng-container *ngIf="selectedMonth === 13; else tempMonth">
                             từ ngày {{ startDateDisplay }} đến ngày {{ endDateDisplay }}
                         </ng-container>

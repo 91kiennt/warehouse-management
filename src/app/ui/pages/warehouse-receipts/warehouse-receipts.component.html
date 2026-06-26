@@ -14,7 +14,7 @@
     </div>
 
     <!-- General Info Form -->
-    <div class="form-section glass-panel">
+    <div class="form-section glass-panel" appEnterFocusNext>
         <div class="form-grid">
             <div class="form-group">
                 <label>Số chứng từ</label>
@@ -103,7 +103,8 @@
                             </button>
                         </td>
                         <td>
-                            <input type="text" [(ngModel)]="item.warehouse" placeholder="Kho">
+                            <input type="text" [(ngModel)]="item.warehouse" readonly (focus)="openWarehousePopup(i)"
+                                (click)="openWarehousePopup(i)" placeholder="Kho" class="code-input" style="cursor: pointer;">
                         </td>
                         <td>
                             <input type="text" [(ngModel)]="item.materialCode" readonly (focus)="openMaterialPopup(i)"
@@ -116,7 +117,7 @@
                             <input type="text" [(ngModel)]="item.unit" placeholder="ĐVT">
                         </td>
                         <td>
-                            <input type="number" [(ngModel)]="item.stockQty" class="number-input">
+                            <input type="number" [(ngModel)]="item.stockQty" readonly class="number-input readonly-input" tabindex="-1">
                         </td>
                         <td>
                             <input type="number" [(ngModel)]="item.quantityDoc" class="number-input">
@@ -288,7 +289,7 @@
     </div>
 
     <!-- Dialog: Print Preview (Paper Form Styling) -->
-    <div class="modal-backdrop print-preview-backdrop" *ngIf="showPrintPreview">
+    <div class="modal-backdrop print-preview-backdrop print-portrait-layout" *ngIf="showPrintPreview">
         <div class="print-preview-modal glass-panel">
             <!-- Non-printable top bar -->
             <div class="preview-actions-bar">
@@ -311,8 +312,8 @@
             <div class="print-paper-sheet" id="printable-area">
                 <div class="paper-header">
                     <div class="header-left">
-                        <div class="org-name">BAN CHÍNH TRỊ HẬU CẦN</div>
-                        <div class="dept-name">BỘ PHẬN Y TẾ</div>
+                        <div class="org-name">{{ settingsService.settings()?.parentOrgShort || 'BAN CHÍNH TRỊ HẬU CẦN' }}</div>
+                        <div class="dept-name">{{ settingsService.settings()?.subOrgShort || 'BỘ PHẬN Y TẾ' }}</div>
                         <div class="dots">-------</div>
                     </div>
                     <div class="header-right">
@@ -660,6 +661,83 @@
                     Lưu
                 </button>
                 <button class="btn btn-secondary" (click)="closeAddMaterialModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog: Warehouse Lookup Popup -->
+    <div class="modal-backdrop" *ngIf="showWarehouseModal">
+        <div class="search-modal material-lookup-modal glass-panel">
+            <div class="modal-header">
+                <div class="modal-header-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="title-icon">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                    <h2>Chọn kho hàng</h2>
+                </div>
+                <button class="btn-close" (click)="closeWarehousePopup()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Part 1: Search Row -->
+                <div class="lookup-search-row">
+                    <div class="lookup-search-field">
+                        <label>Tìm kiếm kho:</label>
+                        <input type="text" [(ngModel)]="searchWarehouseTerm" (keydown.enter)="onGetWarehouseData()"
+                            placeholder="Nhập mã hoặc tên kho để tìm kiếm...">
+                    </div>
+                    <button class="btn btn-primary" (click)="onGetWarehouseData()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        Lấy dữ liệu
+                    </button>
+                </div>
+
+                <!-- Part 2: Warehouse Grid -->
+                <div class="table-responsive lookup-table-box">
+                    <table class="lookup-list-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">Mã Kho</th>
+                                <th>Tên Kho</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let s of filteredSupplies" [class.selected-row]="selectedPopupSupply === s"
+                                (click)="selectPopupSupplyRow(s)" (dblclick)="confirmSelectWarehouse()">
+                                <td><strong>{{ s.code }}</strong></td>
+                                <td>{{ s.name }}</td>
+                            </tr>
+                            <tr *ngIf="filteredSupplies.length === 0">
+                                <td colspan="2" class="center-align text-muted" style="padding: 2rem;">
+                                    Không tìm thấy kho hàng nào phù hợp.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Part 3: Footer Actions -->
+            <div class="modal-footer">
+                <button class="btn btn-success" [disabled]="!selectedPopupSupply" (click)="confirmSelectWarehouse()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Chọn
+                </button>
+                <button class="btn btn-danger" (click)="closeWarehousePopup()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Đóng
+                </button>
             </div>
         </div>
     </div>

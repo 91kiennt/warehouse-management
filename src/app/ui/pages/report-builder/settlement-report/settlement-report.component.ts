@@ -4,25 +4,32 @@ import { FormsModule } from "@angular/forms";
 import { invoke } from "@tauri-apps/api/core";
 import { UnitSettingsService } from "../../../../utils/unit-settings.service";
 
-export interface ReviewRow {
+export interface SettlementRow {
     index?: number;
     materialCode: string;
     materialName: string;
     unit: string;
-    bookQty: number | null; // Sổ sách (cho phép null để in dòng trống)
-    actualQtyStr: string;   // Thực tế (để trống)
-    diffQtyStr: string;     // Chênh lệch (để trống)
-    notes: string;
+    price: number;       // Đơn giá = Thành tiền / Số lượng (hoặc đơn giá nhập cuối cùng nếu lượng xuất = 0)
+    quantity: number;    // Số lượng xuất trong kỳ
+    amount: number;      // Thành tiền xuất trong kỳ
+    note: string;
+    parentName: string;  // Nhóm vật tư
+}
+
+export interface GroupedSettlement {
+    groupName: string;
+    romanIndex: string;
+    rows: SettlementRow[];
 }
 
 @Component({
     standalone: true,
-    selector: "app-review-report",
+    selector: "app-settlement-report",
     imports: [CommonModule, FormsModule],
-    templateUrl: "./review-report.component.html",
-    styleUrls: ["./review-report.component.css"],
+    templateUrl: "./settlement-report.component.html",
+    styleUrls: ["./settlement-report.component.css"],
 })
-export class ReviewReportComponent implements OnInit {
+export class SettlementReportComponent implements OnInit {
     settingsService = inject(UnitSettingsService);
 
     // Form filter properties
@@ -32,6 +39,20 @@ export class ReviewReportComponent implements OnInit {
     endDate: string = "2026-01-31";
     startDateDisplay: string = "01/01/2026";
     endDateDisplay: string = "31/01/2026";
+
+    // Data grid properties
+    reportRows: SettlementRow[] = [];
+    groupedSections: GroupedSettlement[] = [];
+    showReportTable: boolean = false;
+    showPrintModal: boolean = false;
+
+    // Grand Totals
+    totalQty: number = 0;
+    totalAmt: number = 0;
+
+    // Alert / message
+    message: string = "";
+    messageType: "success" | "error" = "success";
 
     months = [
         { value: 1, label: "1. Tháng 1" },
@@ -48,14 +69,8 @@ export class ReviewReportComponent implements OnInit {
         { value: 12, label: "12. Tháng 12" },
     ];
 
-    // Data grid properties
-    reportRows: ReviewRow[] = [];
-    showReportTable: boolean = false;
-    showPrintModal: boolean = false;
-
-    // Alert / message
-    message: string = "";
-    messageType: "success" | "error" = "success";
+    private rawReceipts: any[] = [];
+    private rawIssues: any[] = [];
 
     ngOnInit(): void {
         this.updateDateRange();
@@ -191,38 +206,42 @@ export class ReviewReportComponent implements OnInit {
 
             // Load materials, receipts, and issues
             const materials = await invoke<any[]>("list_materials");
-            const receipts = await invoke<any[]>("list_warehouse_receipts");
-            const issues = await invoke<any[]>("list_warehouse_issues");
+            this.rawReceipts = await invoke<any[]>("list_warehouse_receipts");
+            this.rawIssues = await invoke<any[]>("list_warehouse_issues");
 
-            // Compute stocks for each material (Closing Qty as of endDate)
-            const map = new Map<string, number>();
-            
-            // Initial map of all materials
-            for (const mat of materials) {
-                map.set(mat.code, 0);
-            }
-
-            // Receipts (Imports) up to endDate
-            for (const r of receipts) {
-                const postingDate = r.postingDate || (r as any).posting_date;
-                if (postingDate <= this.endDate) {
-                    let itemsList: any[] = [];
-                    try {
-                        itemsList = r.items ? JSON.parse(r.items) : [];
-                    } catch (e) {}
-                    for (const item of itemsList) {
-                        const code = item.materialCode;
-                        const qty = Number(item.quantityReal || 0);
-                        const curr = map.get(code) || 0;
-                        map.set(code, curr + qty);
+            // Build map of last receipt price for each material (fallback unit price when quantity is 0)
+            const lastReceiptPriceMap = new Map<string, number>();
+            const sortedReceipts = [...this.rawReceipts].sort((a, b) => {
+                const da = a.postingDate || (a as any).posting_date || "";
+                const db = b.postingDate || (b as any).posting_date || "";
+                return da.localeCompare(db);
+            });
+            for (const r of sortedReceipts) {
+                let itemsList: any[] = [];
+                try {
+                    itemsList = r.items ? JSON.parse(r.items) : [];
+                } catch (e) {}
+                for (const item of itemsList) {
+                    const price = Number(item.price || 0);
+                    if (price > 0) {
+                        lastReceiptPriceMap.set(item.materialCode, price);
                     }
                 }
             }
 
-            // Issues (Exports) up to endDate
-            for (const iss of issues) {
+            // Compute total issued quantities and amounts during the period
+            const qtyMap = new Map<string, number>();
+            const amtMap = new Map<string, number>();
+
+            for (const mat of materials) {
+                qtyMap.set(mat.code, 0);
+                amtMap.set(mat.code, 0);
+            }
+
+            // Issues (Exports) in the period [startDate, endDate]
+            for (const iss of this.rawIssues) {
                 const postingDate = iss.postingDate || (iss as any).posting_date;
-                if (postingDate <= this.endDate) {
+                if (postingDate >= this.startDate && postingDate <= this.endDate) {
                     let itemsList: any[] = [];
                     try {
                         itemsList = iss.items ? JSON.parse(iss.items) : [];
@@ -230,44 +249,91 @@ export class ReviewReportComponent implements OnInit {
                     for (const item of itemsList) {
                         const code = item.materialCode;
                         const qty = Number(item.quantityReal || 0);
-                        const curr = map.get(code) || 0;
-                        map.set(code, curr - qty);
+                        const amt = Number(item.amount || 0);
+
+                        qtyMap.set(code, (qtyMap.get(code) || 0) + qty);
+                        amtMap.set(code, (amtMap.get(code) || 0) + amt);
                     }
                 }
             }
 
             // Generate report rows
-            const rows: ReviewRow[] = [];
-            let i = 1;
+            const rows: SettlementRow[] = [];
             for (const mat of materials) {
-                const closingQty = map.get(mat.code) || 0;
+                const q = qtyMap.get(mat.code) || 0;
+                const a = amtMap.get(mat.code) || 0;
+                
+                // Calculate unit price
+                let p = 0;
+                if (q > 0) {
+                    p = Math.round(a / q);
+                } else {
+                    p = lastReceiptPriceMap.get(mat.code) || 0;
+                }
+
                 rows.push({
-                    index: i++,
                     materialCode: mat.code,
                     materialName: mat.name,
                     unit: mat.unit || "",
-                    bookQty: closingQty,
-                    actualQtyStr: "",
-                    diffQtyStr: "",
-                    notes: ""
+                    price: p,
+                    quantity: q,
+                    amount: a,
+                    note: "",
+                    parentName: (mat.parentName || (mat as any).parent_name || "Vật tư khác").trim()
                 });
             }
 
-            // Sort report rows by material code
-            rows.sort((a, b) => a.materialCode.localeCompare(b.materialCode));
-            
-            // Re-index after sorting
+            // Sort report rows by parentName then by materialCode
+            rows.sort((a, b) => {
+                const groupComp = a.parentName.localeCompare(b.parentName);
+                if (groupComp !== 0) return groupComp;
+                return a.materialCode.localeCompare(b.materialCode);
+            });
+
+            // Assign indices (TT) sequentially across all items
             rows.forEach((r, idx) => {
                 r.index = idx + 1;
             });
 
             this.reportRows = rows;
+
+            // Group rows for display sections
+            this.buildGroupedSections();
+
+            // Calculate totals
+            this.totalQty = rows.reduce((sum, r) => sum + r.quantity, 0);
+            this.totalAmt = rows.reduce((sum, r) => sum + r.amount, 0);
+
             this.showReportTable = true;
-            this.showFeedback(`Đã tải thành công số liệu kiểm kê kho.`);
+            this.showFeedback(`Đã tải thành công số liệu báo cáo quyết toán.`);
         } catch (error) {
             this.showFeedback("Lỗi khi tải dữ liệu báo cáo.", "error");
             console.error(error);
         }
+    }
+
+    private buildGroupedSections(): void {
+        const groupsMap = new Map<string, SettlementRow[]>();
+        for (const row of this.reportRows) {
+            const grp = row.parentName;
+            if (!groupsMap.has(grp)) {
+                groupsMap.set(grp, []);
+            }
+            groupsMap.get(grp)!.push(row);
+        }
+
+        const sections: GroupedSettlement[] = [];
+        const romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+        let idx = 0;
+        for (const [groupName, rows] of groupsMap.entries()) {
+            sections.push({
+                groupName,
+                romanIndex: romanNumerals[idx % romanNumerals.length],
+                rows
+            });
+            idx++;
+        }
+        this.groupedSections = sections;
     }
 
     onPrintReport(): void {
@@ -286,26 +352,47 @@ export class ReviewReportComponent implements OnInit {
         window.print();
     }
 
-    // Helper to generate dynamic empty padding rows to make layout A4 neat (at least 24 rows total)
+    // Padded rows for print view (at least 30 rows total, including headers)
     getPrintItems(): any[] {
-        const minRows = 24;
-        if (this.reportRows.length >= minRows) {
-            return this.reportRows;
-        }
-        const items = [...this.reportRows];
-        const paddingCount = minRows - items.length;
-        for (let i = 0; i < paddingCount; i++) {
-            items.push({
-                index: items.length + 1,
-                materialCode: "",
-                materialName: "",
-                unit: "",
-                bookQty: null,
-                actualQtyStr: "",
-                diffQtyStr: "",
-                notes: ""
+        const minRows = 30;
+        const flatItems: any[] = [];
+        let sequentialIndex = this.reportRows.length;
+        
+        // Add actual groups and rows
+        for (const sec of this.groupedSections) {
+            flatItems.push({
+                isHeader: true,
+                romanIndex: sec.romanIndex,
+                groupName: sec.groupName
             });
+            for (const r of sec.rows) {
+                flatItems.push({
+                    isHeader: false,
+                    ...r
+                });
+            }
         }
-        return items;
+
+        // Padding rows check
+        const paddingCount = minRows - this.reportRows.length;
+        if (paddingCount > 0) {
+            for (let i = 0; i < paddingCount; i++) {
+                sequentialIndex++;
+                flatItems.push({
+                    isHeader: false,
+                    isPadding: true,
+                    index: sequentialIndex,
+                    materialCode: "",
+                    materialName: "",
+                    unit: "0",          // Matches "0" in the Excel screenshot padding rows
+                    price: 0,           // Matches "0" in the Excel screenshot padding rows
+                    quantity: null,     // Matches "-" in the Excel screenshot
+                    amount: null,       // Matches "-" in the Excel screenshot
+                    note: ""
+                });
+            }
+        }
+
+        return flatItems;
     }
 }

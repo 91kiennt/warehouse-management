@@ -8,7 +8,8 @@
             <div class="form-group">
                 <label>Thời gian</label>
                 <select [(ngModel)]="selectedMonth" (change)="onMonthChange()">
-                    <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+                    <option *ngFor="let m of months" [ngValue]="m.value">{{ m.label }}</option>
+                    <option [ngValue]="13">Tùy chọn</option>
                 </select>
             </div>
             
@@ -131,7 +132,7 @@
     </div>
 
     <!-- Part 3: Printable Preview Modal (Landscape A4) -->
-    <div class="print-preview-backdrop" *ngIf="showPrintModal">
+    <div class="print-preview-backdrop print-landscape-layout" *ngIf="showPrintModal">
         <div class="print-preview-modal glass-panel">
             <div class="preview-actions-bar print-hide">
                 <span class="preview-title">XEM TRƯỚC BẢN IN</span>
@@ -153,8 +154,8 @@
             <div class="print-paper-sheet" id="printable-area">
                 <div class="paper-header">
                     <div class="header-left">
-                        <div class="org-name">Đơn vị báo cáo: Công ty TNHH An Ngọc Lan</div>
-                        <div class="dept-name">Địa chỉ: Thôn Từ Dương - Xã Tô Hiệu - Huyện Thường Tín - Hà Nội</div>
+                        <div class="org-name">Đơn vị báo cáo: {{ settingsService.settings()?.subOrg || 'Công ty TNHH An Ngọc Lan' }}</div>
+                        <div class="dept-name">Địa chỉ: {{ settingsService.settings()?.parentOrg || 'Thôn Từ Dương - Xã Tô Hiệu - Huyện Thường Tín - Hà Nội' }}</div>
                     </div>
                 </div>
 

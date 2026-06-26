@@ -1,7 +1,8 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { invoke } from "@tauri-apps/api/core";
+import { UnitSettingsService } from "../../../../utils/unit-settings.service";
 
 export interface SummaryRow {
     materialCode: string;
@@ -48,6 +49,8 @@ export interface TransactionDetail {
     styleUrls: ["./inventory-summary-report.component.css"],
 })
 export class InventorySummaryReportComponent implements OnInit {
+    settingsService = inject(UnitSettingsService);
+
     // Form filter properties
     selectedMonth: number = 1;
     selectedYear: number = 2026;
@@ -105,6 +108,8 @@ export class InventorySummaryReportComponent implements OnInit {
     }
 
     updateDateRange(): void {
+        this.selectedMonth = Number(this.selectedMonth);
+        if (this.selectedMonth === 13) return;
         const year = this.selectedYear || 2026;
         const month = this.selectedMonth || 1;
         
@@ -137,16 +142,58 @@ export class InventorySummaryReportComponent implements OnInit {
     }
 
     onMonthChange(): void {
+        this.selectedMonth = Number(this.selectedMonth);
         this.updateDateRange();
     }
 
     onDateBlur(type: 'start' | 'end'): void {
+        this.selectedMonth = Number(this.selectedMonth);
         const val = type === 'start' ? this.startDateDisplay : this.endDateDisplay;
-        const parsedYear = this.parseYear(val);
-        if (parsedYear !== null) {
-            this.selectedYear = parsedYear;
+        if (this.selectedMonth === 13) {
+            const parsed = this.parseDateDMY(val);
+            if (parsed) {
+                if (type === 'start') {
+                    this.startDate = parsed;
+                } else {
+                    this.endDate = parsed;
+                }
+            } else {
+                // Tự động khôi phục về ngày trước đó nếu nhập sai
+                if (type === 'start') {
+                    this.startDateDisplay = this.formatDateDMY(this.startDate);
+                } else {
+                    this.endDateDisplay = this.formatDateDMY(this.endDate);
+                }
+            }
+        } else {
+            const parsedYear = this.parseYear(val);
+            if (parsedYear !== null) {
+                this.selectedYear = parsedYear;
+            }
+            this.updateDateRange();
         }
-        this.updateDateRange();
+    }
+
+    parseDateDMY(displayVal: string): string | null {
+        if (!displayVal) return null;
+        const parts = displayVal.trim().split('/');
+        if (parts.length === 3) {
+            const d = parts[0].padStart(2, '0');
+            const m = parts[1].padStart(2, '0');
+            const y = parts[2];
+            if (d.length === 2 && m.length === 2 && y.length === 4) {
+                const day = parseInt(d, 10);
+                const month = parseInt(m, 10);
+                const year = parseInt(y, 10);
+                if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1000 && year <= 9999) {
+                    const testDate = new Date(year, month - 1, day);
+                    if (testDate.getFullYear() === year && testDate.getMonth() === month - 1 && testDate.getDate() === day) {
+                        return `${y}-${m}-${d}`;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     parseYear(val: string): number | null {
@@ -162,6 +209,8 @@ export class InventorySummaryReportComponent implements OnInit {
     }
 
     syncYearFromInputs(): void {
+        this.selectedMonth = Number(this.selectedMonth);
+        if (this.selectedMonth === 13) return;
         const startYear = this.parseYear(this.startDateDisplay);
         if (startYear !== null) {
             this.selectedYear = startYear;

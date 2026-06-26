@@ -1,0 +1,54 @@
+<div class="onboarding-overlay">
+    <div class="onboarding-modal glass-panel">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                {{ isEditMode ? 'CẤU HÌNH THÔNG TIN ĐƠN VỊ' : 'THIẾT LẬP THÔNG TIN BAN ĐẦU' }}
+            </h2>
+            <button class="close-btn" *ngIf="isEditMode" (click)="onCancel()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <p class="intro-text" *ngIf="!isEditMode">
+                Chào mừng bạn đến với phần mềm <strong>Warehouse Management</strong>. Vui lòng thiết lập thông tin đơn vị của bạn để hệ thống tự động điền vào tiêu đề các biểu in và báo cáo.
+            </p>
+
+            <div class="form-container">
+                <div class="form-group">
+                    <label>Cơ quan chủ quản (Tên đầy đủ) <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="parentOrg" placeholder="Ví dụ: BỘ TƯ LỆNH CẢNH SÁT CƠ ĐỘNG" />
+                </div>
+
+                <div class="form-group">
+                    <label>Cơ quan chủ quản (Viết tắt) <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="parentOrgShort" placeholder="Ví dụ: BỘ TƯ LỆNH CSCĐ" />
+                </div>
+
+                <div class="form-group">
+                    <label>Đơn vị báo cáo (Tên đầy đủ) <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="subOrg" placeholder="Ví dụ: Trung tâm Huấn luyện, bồi dưỡng nghiệp vụ..." />
+                </div>
+
+                <div class="form-group">
+                    <label>Đơn vị báo cáo (Viết tắt) <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="subOrgShort" placeholder="Ví dụ: TRUNG TÂM HL, BDNV&GDNN SỐ 1" />
+                </div>
+
+                <div class="form-group">
+                    <label>Ký hiệu / Số hiệu văn bản mặc định <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="docPrefix" placeholder="Ví dụ: BCTL-TTHL1- BCTHC" />
+                </div>
+
+                <div class="error-message" *ngIf="errorMessage">
+                    {{ errorMessage }}
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" *ngIf="isEditMode" (click)="onCancel()" [disabled]="isSaving">Hủy</button>
+            <button class="btn btn-primary" (click)="onSave()" [disabled]="isSaving">
+                {{ isSaving ? 'Đang lưu...' : (isEditMode ? 'Cập nhật' : 'Xác nhận & Bắt đầu') }}
+            </button>
+        </div>
+    </div>
+</div>
