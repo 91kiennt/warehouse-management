@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, OnDestroy, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { invoke } from "@tauri-apps/api/core";
@@ -48,7 +48,7 @@ export interface TransactionDetail {
     templateUrl: "./inventory-summary-report.component.html",
     styleUrls: ["./inventory-summary-report.component.css"],
 })
-export class InventorySummaryReportComponent implements OnInit {
+export class InventorySummaryReportComponent implements OnInit, OnDestroy {
     settingsService = inject(UnitSettingsService);
 
     // Form filter properties
@@ -496,14 +496,40 @@ export class InventorySummaryReportComponent implements OnInit {
             return;
         }
         this.showPrintModal = true;
+        this.injectPrintStyle();
     }
 
     closePrintModal(): void {
         this.showPrintModal = false;
+        this.removePrintStyle();
     }
 
     triggerSystemPrint(): void {
         window.print();
+    }
+
+    ngOnDestroy(): void {
+        this.removePrintStyle();
+    }
+
+    private injectPrintStyle(): void {
+        this.removePrintStyle();
+        const style = document.createElement("style");
+        style.id = "print-landscape-style-override";
+        style.textContent = `
+            @page {
+                size: A4 landscape !important;
+                margin: 0 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    private removePrintStyle(): void {
+        const style = document.getElementById("print-landscape-style-override");
+        if (style) {
+            style.remove();
+        }
     }
 
     // Vietnamese Number-to-Words Parser
