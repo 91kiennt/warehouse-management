@@ -232,10 +232,25 @@ export class SettlementReportComponent implements OnInit {
             // Compute total issued quantities and amounts during the period
             const qtyMap = new Map<string, number>();
             const amtMap = new Map<string, number>();
+            const activeCodes = new Set<string>();
 
             for (const mat of materials) {
                 qtyMap.set(mat.code, 0);
                 amtMap.set(mat.code, 0);
+            }
+
+            // Receipts (Imports) up to endDate
+            for (const r of this.rawReceipts) {
+                const postingDate = r.postingDate || (r as any).posting_date;
+                if (postingDate <= this.endDate) {
+                    let itemsList: any[] = [];
+                    try {
+                        itemsList = r.items ? JSON.parse(r.items) : [];
+                    } catch (e) {}
+                    for (const item of itemsList) {
+                        activeCodes.add(item.materialCode);
+                    }
+                }
             }
 
             // Issues (Exports) in the period [startDate, endDate]
@@ -260,6 +275,9 @@ export class SettlementReportComponent implements OnInit {
             // Generate report rows
             const rows: SettlementRow[] = [];
             for (const mat of materials) {
+                if (!activeCodes.has(mat.code)) {
+                    continue;
+                }
                 const q = qtyMap.get(mat.code) || 0;
                 const a = amtMap.get(mat.code) || 0;
                 
@@ -352,11 +370,8 @@ export class SettlementReportComponent implements OnInit {
         window.print();
     }
 
-    // Padded rows for print view (at least 30 rows total, including headers)
     getPrintItems(): any[] {
-        const minRows = 30;
         const flatItems: any[] = [];
-        let sequentialIndex = this.reportRows.length;
         
         // Add actual groups and rows
         for (const sec of this.groupedSections) {
@@ -369,26 +384,6 @@ export class SettlementReportComponent implements OnInit {
                 flatItems.push({
                     isHeader: false,
                     ...r
-                });
-            }
-        }
-
-        // Padding rows check
-        const paddingCount = minRows - this.reportRows.length;
-        if (paddingCount > 0) {
-            for (let i = 0; i < paddingCount; i++) {
-                sequentialIndex++;
-                flatItems.push({
-                    isHeader: false,
-                    isPadding: true,
-                    index: sequentialIndex,
-                    materialCode: "",
-                    materialName: "",
-                    unit: "0",          // Matches "0" in the Excel screenshot padding rows
-                    price: 0,           // Matches "0" in the Excel screenshot padding rows
-                    quantity: null,     // Matches "-" in the Excel screenshot
-                    amount: null,       // Matches "-" in the Excel screenshot
-                    note: ""
                 });
             }
         }

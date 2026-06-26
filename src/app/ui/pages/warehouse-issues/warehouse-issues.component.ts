@@ -533,27 +533,7 @@ export class WarehouseIssuesComponent implements OnInit {
     }
 
     getPrintItems(): any[] {
-        const validItems = this.items.filter(item => item.materialCode.trim() !== "");
-        const printItems = [...validItems];
-        
-        while (printItems.length < 6) {
-            printItems.push({
-                warehouse: "",
-                materialCode: "",
-                materialName: "",
-                materialBarcode: "",
-                unit: "",
-                stockQty: 0,
-                quantityReq: 0,
-                quantityReal: 0,
-                price: 0,
-                amount: 0,
-                finishedProduct: "",
-                notes: "",
-                isPad: true
-            });
-        }
-        return printItems;
+        return this.items.filter(item => item.materialCode.trim() !== "");
     }
 
     // Vietnamese Number-to-Words Converter

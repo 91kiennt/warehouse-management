@@ -263,6 +263,7 @@ export class StrengthReportComponent implements OnInit {
             }
 
             // Process receipts (Imports)
+            const activeCodes = new Set<string>();
             for (const receipt of receipts) {
                 const postingDate = receipt.postingDate || (receipt as any).posting_date;
                 let itemsList: any[] = [];
@@ -274,6 +275,9 @@ export class StrengthReportComponent implements OnInit {
 
                 for (const item of itemsList) {
                     const code = item.materialCode;
+                    if (postingDate <= this.endDate) {
+                        activeCodes.add(code);
+                    }
                     let entry = map.get(code);
                     if (!entry) {
                         entry = {
@@ -359,6 +363,9 @@ export class StrengthReportComponent implements OnInit {
             // Calculate closing balances and prices
             const rows: StrengthRow[] = [];
             for (const entry of map.values()) {
+                if (!activeCodes.has(entry.materialCode)) {
+                    continue;
+                }
                 entry.closingQty = entry.openingQty + entry.importQty - entry.exportQty;
                 entry.closingAmt = entry.openingAmt + entry.importAmt - entry.exportAmt;
 

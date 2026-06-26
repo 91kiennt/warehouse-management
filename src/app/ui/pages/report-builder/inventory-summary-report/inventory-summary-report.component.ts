@@ -267,6 +267,7 @@ export class InventorySummaryReportComponent implements OnInit {
             }
 
             // Process all receipts (Imports)
+            const activeCodes = new Set<string>();
             for (const receipt of this.rawReceipts) {
                 const postingDate = receipt.postingDate || (receipt as any).posting_date;
                 let itemsList: any[] = [];
@@ -278,6 +279,9 @@ export class InventorySummaryReportComponent implements OnInit {
 
                 for (const item of itemsList) {
                     const code = item.materialCode;
+                    if (postingDate <= this.endDate) {
+                        activeCodes.add(code);
+                    }
                     let entry = map.get(code);
                     if (!entry) {
                         entry = {
@@ -363,6 +367,9 @@ export class InventorySummaryReportComponent implements OnInit {
             // Calculate closing balances and average prices
             const rows: SummaryRow[] = [];
             for (const entry of map.values()) {
+                if (!activeCodes.has(entry.materialCode)) {
+                    continue;
+                }
                 entry.closingQty = entry.openingQty + entry.importQty - entry.exportQty;
                 entry.closingAmt = entry.openingAmt + entry.importAmt - entry.exportAmt;
 

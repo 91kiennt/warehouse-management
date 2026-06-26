@@ -12,15 +12,17 @@
                     <option [ngValue]="13">Tùy chọn</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label>Từ ngày</label>
-                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')" (keyup.enter)="onDateBlur('start')" />
+                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')"
+                    (keyup.enter)="onDateBlur('start')" />
             </div>
 
             <div class="form-group">
                 <label>Đến ngày</label>
-                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')" (keyup.enter)="onDateBlur('end')" />
+                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')"
+                    (keyup.enter)="onDateBlur('end')" />
             </div>
         </div>
 
@@ -80,7 +82,8 @@
                         <td class="center-align"><strong>{{ row.materialCode }}</strong></td>
                         <td>{{ row.materialName }}</td>
                         <td class="center-align">{{ row.unit }}</td>
-                        <td class="right-align"><strong>{{ row.bookQty !== null && row.bookQty !== 0 ? (row.bookQty | number) : '-' }}</strong></td>
+                        <td class="right-align"><strong>{{ row.bookQty !== null && row.bookQty !== 0 ? (row.bookQty |
+                                number) : '-' }}</strong></td>
                         <td class="right-align">-</td>
                         <td class="right-align">-</td>
                         <td></td>
@@ -118,12 +121,16 @@
             <div class="print-paper-sheet" id="printable-area">
                 <div class="paper-header">
                     <div class="header-left">
-                        <div class="org-name">Đơn vị: {{ settingsService.settings()?.parentOrgShort || '.......................................' }}</div>
-                        <div class="dept-name">Bộ phận: {{ settingsService.settings()?.subOrgShort || '.......................................' }}</div>
+                        <div class="org-name">Đơn vị: {{ settingsService.settings()?.parentOrgShort ||
+                            '.......................................' }}</div>
+                        <div class="dept-name">Bộ phận: {{ settingsService.settings()?.subOrgShort ||
+                            '.......................................' }}</div>
                     </div>
                     <div class="header-right" style="text-align: center;">
-                        <div class="org-name" style="text-transform: uppercase;">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                        <div class="dept-name" style="font-weight: bold; text-decoration: underline;">Độc lập - Tự do - Hạnh phúc</div>
+                        <div class="org-name" style="text-transform: uppercase;">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                        </div>
+                        <div class="dept-name" style="font-weight: bold; text-decoration: underline;">Độc lập - Tự do -
+                            Hạnh phúc</div>
                         <div class="signature-date" style="margin-top: 0.5rem; font-style: italic; padding-right: 0;">
                             Hà Nội, ngày...... tháng...... năm 20...
                         </div>
@@ -131,17 +138,27 @@
                 </div>
 
                 <div class="paper-title-block" style="margin-top: 1rem;">
-                    <h1 style="text-transform: uppercase;">BIÊN BẢN KIỂM KÊ KHO {{ selectedMonth == 13 ? 'KỲ TÙY CHỌN' : ('THÁNG ' + selectedMonth + '/' + selectedYear) }}</h1>
+                    <h1 style="text-transform: uppercase;">BIÊN BẢN KIỂM KÊ KHO {{ selectedMonth == 13 ? 'KỲ TÙY CHỌN' :
+                        ('THÁNG ' + selectedMonth + '/' + selectedYear) }}</h1>
                 </div>
 
                 <div class="paper-intro-text" style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
-                    <p style="margin: 0.3rem 0;">Vào hồi...... giờ...... phút ngày...... tháng...... năm 20... tại ........................................................................................</p>
+                    <p style="margin: 0.3rem 0;">Vào hồi...... giờ...... phút ngày...... tháng...... năm 20... tại
+                        ........................................................................................</p>
                     <p style="margin: 0.3rem 0;">chúng tôi tiến hành kiểm kê kho dược/vật tư như sau:</p>
                     <p style="font-weight: bold; margin: 0.5rem 0 0.3rem 0;">I. THÀNH PHẦN KIỂM KÊ GỒM:</p>
-                    <p style="margin: 0.3rem 0; padding-left: 1rem;">1. Đ/c ........................................................................................ Chức vụ: ........................................................................................</p>
-                    <p style="margin: 0.3rem 0; padding-left: 1rem;">2. Đ/c ........................................................................................ Chức vụ: ........................................................................................</p>
-                    <p style="margin: 0.3rem 0; padding-left: 1rem;">3. Đ/c ........................................................................................ Chức vụ: ........................................................................................</p>
-                    <p style="margin: 0.3rem 0; padding-left: 1rem;">4. Đ/c ........................................................................................ Chức vụ: ........................................................................................</p>
+                    <p style="margin: 0.3rem 0; padding-left: 1rem;">1. Đ/c
+                        ........................................................................................ Chức
+                        vụ: ........................................................................................</p>
+                    <p style="margin: 0.3rem 0; padding-left: 1rem;">2. Đ/c
+                        ........................................................................................ Chức
+                        vụ: ........................................................................................</p>
+                    <p style="margin: 0.3rem 0; padding-left: 1rem;">3. Đ/c
+                        ........................................................................................ Chức
+                        vụ: ........................................................................................</p>
+                    <p style="margin: 0.3rem 0; padding-left: 1rem;">4. Đ/c
+                        ........................................................................................ Chức
+                        vụ: ........................................................................................</p>
                     <p style="font-weight: bold; margin: 0.8rem 0 0.5rem 0;">II. DANH MỤC KIỂM KÊ</p>
                 </div>
 
@@ -168,9 +185,10 @@
                                 <td class="center-align"><strong>{{ row.materialCode }}</strong></td>
                                 <td>{{ row.materialName }}</td>
                                 <td class="center-align">{{ row.unit }}</td>
-                                <td class="right-align"><strong>{{ row.bookQty !== null && row.bookQty !== 0 ? (row.bookQty | number) : (row.bookQty === 0 ? '0' : '-') }}</strong></td>
-                                <td class="right-align">-</td>
-                                <td class="right-align">-</td>
+                                <td class="right-align"><strong>{{ row.bookQty !== null && row.bookQty !== 0 ?
+                                        (row.bookQty | number) : (row.bookQty === 0 ? '0' : '') }}</strong></td>
+                                <td class="right-align"></td>
+                                <td class="right-align"></td>
                                 <td></td>
                             </tr>
                         </tbody>

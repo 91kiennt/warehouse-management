@@ -232,6 +232,7 @@ export class InventoryReportComponent implements OnInit {
             // Compute stocks for each material (Closing Qty & Amt as of endDate)
             const qtyMap = new Map<string, number>();
             const amtMap = new Map<string, number>();
+            const activeCodes = new Set<string>();
 
             for (const mat of materials) {
                 qtyMap.set(mat.code, 0);
@@ -248,6 +249,7 @@ export class InventoryReportComponent implements OnInit {
                     } catch (e) {}
                     for (const item of itemsList) {
                         const code = item.materialCode;
+                        activeCodes.add(code);
                         const qty = Number(item.quantityReal || 0);
                         const amt = Number(item.amount || 0);
 
@@ -279,6 +281,9 @@ export class InventoryReportComponent implements OnInit {
             // Generate report rows
             const rows: InventoryRow[] = [];
             for (const mat of materials) {
+                if (!activeCodes.has(mat.code)) {
+                    continue;
+                }
                 const q = qtyMap.get(mat.code) || 0;
                 const a = amtMap.get(mat.code) || 0;
                 
@@ -371,11 +376,8 @@ export class InventoryReportComponent implements OnInit {
         window.print();
     }
 
-    // Padded rows for print view (at least 30 rows total, including headers)
     getPrintItems(): any[] {
-        const minRows = 30;
         const flatItems: any[] = [];
-        let sequentialIndex = this.reportRows.length;
         
         // Add actual groups and rows
         for (const sec of this.groupedSections) {
@@ -388,26 +390,6 @@ export class InventoryReportComponent implements OnInit {
                 flatItems.push({
                     isHeader: false,
                     ...r
-                });
-            }
-        }
-
-        // Padding rows check: we want the total number of ITEM rows to be at least 30.
-        const paddingCount = minRows - this.reportRows.length;
-        if (paddingCount > 0) {
-            for (let i = 0; i < paddingCount; i++) {
-                sequentialIndex++;
-                flatItems.push({
-                    isHeader: false,
-                    isPadding: true,
-                    index: sequentialIndex,
-                    materialCode: "",
-                    materialName: "",
-                    unit: "0",          // Matches "0" in the Excel screenshot padding rows
-                    price: 0,           // Matches "0" in the Excel screenshot padding rows
-                    quantity: null,     // Matches "-" in the Excel screenshot
-                    amount: null,       // Matches "-" in the Excel screenshot
-                    note: ""
                 });
             }
         }

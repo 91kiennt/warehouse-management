@@ -508,7 +508,7 @@ input.flatpickr-custom-input:focus {
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
-        padding: 0 !important;
+        padding: 1.2cm 1.5cm !important;
         margin: 0 !important;
         box-shadow: none !important;
         background: #ffffff !important;

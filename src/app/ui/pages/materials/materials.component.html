@@ -200,13 +200,10 @@
     <!-- Thanh thao tác dưới cùng (Footer Action Bar) -->
     <footer class="footer-action-bar">
         <div class="left-actions">
-            <button type="button" class="secondary" disabled>Lấy từ file</button>
-            <button type="button" class="print-btn" (click)="onPrint()">In</button>
-            <button type="button" class="secondary" disabled>Gộp mã</button>
+            <!-- <button type="button" class="print-btn" (click)="onPrint()">In</button> -->
         </div>
         <div class="right-actions">
             <button type="button" class="success" (click)="onAddNew()">Thêm</button>
-            <button type="button" class="secondary" disabled>Copy</button>
             <button type="button" class="danger" [disabled]="selectedMaterialId === null"
                 (click)="onDeleteSelected()">Xóa</button>
             <button type="button" class="primary" (click)="onSave()">Lưu</button>

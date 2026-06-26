@@ -66,15 +66,15 @@ export class ReviewReportComponent implements OnInit {
         if (this.selectedMonth === 13) return;
         const year = this.selectedYear || 2026;
         const month = this.selectedMonth || 1;
-        
+
         // Start date: 1st of the month
         const start = new Date(year, month - 1, 1);
         // End date: last day of the month
         const end = new Date(year, month, 0);
-        
+
         this.startDate = this.formatDate(start);
         this.endDate = this.formatDate(end);
-        
+
         this.startDateDisplay = this.formatDateDMY(this.startDate);
         this.endDateDisplay = this.formatDateDMY(this.endDate);
     }
@@ -196,7 +196,8 @@ export class ReviewReportComponent implements OnInit {
 
             // Compute stocks for each material (Closing Qty as of endDate)
             const map = new Map<string, number>();
-            
+            const activeCodes = new Set<string>();
+
             // Initial map of all materials
             for (const mat of materials) {
                 map.set(mat.code, 0);
@@ -209,9 +210,10 @@ export class ReviewReportComponent implements OnInit {
                     let itemsList: any[] = [];
                     try {
                         itemsList = r.items ? JSON.parse(r.items) : [];
-                    } catch (e) {}
+                    } catch (e) { }
                     for (const item of itemsList) {
                         const code = item.materialCode;
+                        activeCodes.add(code);
                         const qty = Number(item.quantityReal || 0);
                         const curr = map.get(code) || 0;
                         map.set(code, curr + qty);
@@ -226,7 +228,7 @@ export class ReviewReportComponent implements OnInit {
                     let itemsList: any[] = [];
                     try {
                         itemsList = iss.items ? JSON.parse(iss.items) : [];
-                    } catch (e) {}
+                    } catch (e) { }
                     for (const item of itemsList) {
                         const code = item.materialCode;
                         const qty = Number(item.quantityReal || 0);
@@ -240,6 +242,9 @@ export class ReviewReportComponent implements OnInit {
             const rows: ReviewRow[] = [];
             let i = 1;
             for (const mat of materials) {
+                if (!activeCodes.has(mat.code)) {
+                    continue;
+                }
                 const closingQty = map.get(mat.code) || 0;
                 rows.push({
                     index: i++,
@@ -255,7 +260,7 @@ export class ReviewReportComponent implements OnInit {
 
             // Sort report rows by material code
             rows.sort((a, b) => a.materialCode.localeCompare(b.materialCode));
-            
+
             // Re-index after sorting
             rows.forEach((r, idx) => {
                 r.index = idx + 1;
@@ -286,26 +291,7 @@ export class ReviewReportComponent implements OnInit {
         window.print();
     }
 
-    // Helper to generate dynamic empty padding rows to make layout A4 neat (at least 24 rows total)
     getPrintItems(): any[] {
-        const minRows = 24;
-        if (this.reportRows.length >= minRows) {
-            return this.reportRows;
-        }
-        const items = [...this.reportRows];
-        const paddingCount = minRows - items.length;
-        for (let i = 0; i < paddingCount; i++) {
-            items.push({
-                index: items.length + 1,
-                materialCode: "",
-                materialName: "",
-                unit: "",
-                bookQty: null,
-                actualQtyStr: "",
-                diffQtyStr: "",
-                notes: ""
-            });
-        }
-        return items;
+        return this.reportRows;
     }
 }
