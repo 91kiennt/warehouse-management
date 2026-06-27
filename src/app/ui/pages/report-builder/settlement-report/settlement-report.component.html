@@ -76,10 +76,10 @@
                 <tbody>
                     <ng-container *ngFor="let section of groupedSections">
                         <!-- Group Header Row -->
-                        <tr class="group-title-row">
+                        <!-- <tr class="group-title-row">
                             <td><strong>{{ section.romanIndex }}</strong></td>
                             <td colspan="7" style="text-align: left;"><strong>{{ section.groupName }}</strong></td>
-                        </tr>
+                        </tr> -->
                         <!-- Group Items -->
                         <tr *ngFor="let row of section.rows">
                             <td class="center-align">{{ row.index }}</td>
@@ -215,11 +215,11 @@
                             <tr *ngFor="let item of getPrintItems()" [class.group-header-row]="item.isHeader"
                                 [class.padding-row]="item.isPadding">
                                 <!-- Group Header Row -->
-                                <ng-container *ngIf="item.isHeader">
+                                <!-- <ng-container *ngIf="item.isHeader">
                                     <td class="center-align"><strong>{{ item.romanIndex }}</strong></td>
                                     <td colspan="7" style="text-align: left; font-weight: bold; text-transform: none;">
                                         {{ item.groupName }}</td>
-                                </ng-container>
+                                </ng-container> -->
 
                                 <!-- Normal / Padding Row -->
                                 <ng-container *ngIf="!item.isHeader">
@@ -228,12 +228,12 @@
                                     <td style="text-align: left;">{{ item.materialName }}</td>
                                     <td class="center-align">{{ item.unit }}</td>
                                     <td class="right-align">{{ item.price !== 0 ? (item.price | number) :
-                                        (item.isPadding ? '0' : '-') }}</td>
+                                        (item.isPadding ? '0' : '') }}</td>
                                     <td class="right-align"><strong>{{ item.quantity !== null && item.quantity !== 0 ?
-                                            (item.quantity | number) : (item.quantity === 0 || item.isPadding ? '-' :
-                                            '-') }}</strong></td>
+                                            (item.quantity | number) : (item.quantity === 0 || item.isPadding ? '' :
+                                            '') }}</strong></td>
                                     <td class="right-align"><strong>{{ item.amount !== null && item.amount !== 0 ?
-                                            (item.amount | number) : (item.amount === 0 || item.isPadding ? '-' : '-')
+                                            (item.amount | number) : (item.amount === 0 || item.isPadding ? '' : '')
                                             }}</strong></td>
                                     <td>{{ item.note }}</td>
                                 </ng-container>

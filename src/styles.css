@@ -236,15 +236,6 @@ input.flatpickr-custom-input:focus {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-
-    thead,
-    tfoot {
-        display: none !important
-    }
-
-    @page {
-        margin: 0 !important;
-    }
 }
 
 /* Default A4 print settings */
