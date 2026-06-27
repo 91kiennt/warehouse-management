@@ -447,6 +447,50 @@ fn get_app_data_dir() -> PathBuf {
     proj_dirs.data_dir().to_path_buf()
 }
 
+/// macOS: Đặt NSPrintInfo.sharedPrintInfo margins = 0 ngay khi khởi động app.
+/// Khi window.print() được gọi, WKWebView sẽ đọc NSPrintInfo và không còn
+/// không gian để render native print decorations (ngày tháng, URL, tiêu đề,
+/// số trang). CSS `@page { margin: 0 }` chỉ ảnh hưởng CSS page-box layout,
+/// KHÔNG ảnh hưởng OS-level NSPrintInfo — đây là lý do CSS đơn thuần thất bại
+/// trên macOS WKWebView.
+#[cfg(target_os = "macos")]
+fn configure_print_no_headers() {
+    use objc::{class, msg_send, runtime::Object, sel, sel_impl};
+    unsafe {
+        // NSPrintInfo.sharedPrintInfo là singleton toàn cục được WKWebView sử dụng
+        // khi window.print() được gọi.
+        let print_info: *mut Object = msg_send![class!(NSPrintInfo), sharedPrintInfo];
+        if !print_info.is_null() {
+            // Đặt 4 margins = 0 → loại bỏ không gian render header/footer của WKWebView.
+            let _: () = msg_send![print_info, setTopMargin: 0.0_f64];
+            let _: () = msg_send![print_info, setBottomMargin: 0.0_f64];
+            let _: () = msg_send![print_info, setLeftMargin: 0.0_f64];
+            let _: () = msg_send![print_info, setRightMargin: 0.0_f64];
+        }
+    }
+}
+
+/// Windows: Tauri sử dụng WebView2 (Chromium-based engine) trên Windows.
+/// Khác với macOS WKWebView, WebView2/Chromium TÔN TRỌNG CSS `@page { margin: 0 }`
+/// để loại bỏ native print headers/footers. Quy tắc toàn cục này đã được đặt
+/// trong src/styles.css nên không cần gọi Windows API riêng.
+///
+/// Ngoài ra, `beforeprint`/`afterprint` JS event handlers đã được inject qua
+/// `initializationScript` trong tauri.conf.json để xóa document.title trước khi
+/// in (ngăn tiêu đề "Warehouse Management" hiển thị trong print header).
+#[cfg(target_os = "windows")]
+fn configure_print_no_headers() {
+    // No-op trên Windows:
+    // - CSS `@page { margin: 0 !important }` trong src/styles.css đã xử lý Chromium.
+    // - JS beforeprint/afterprint trong tauri.conf.json initializationScript xử lý title.
+}
+
+/// Linux và các nền tảng khác: CSS `@page { margin: 0 }` là cách xử lý chính.
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn configure_print_no_headers() {
+    // No-op: CSS @page { margin: 0 !important } trong src/styles.css đã xử lý.
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
@@ -458,6 +502,34 @@ pub fn run() {
         Database::open(database_path.to_string_lossy().as_ref()).expect("Failed to open database");
 
     tauri::Builder::default()
+        .setup(|app| {
+            // 1. Platform-specific native print configuration.
+            //    macOS: set NSPrintInfo margins = 0 to suppress WKWebView native headers/footers.
+            //    Windows/Linux: no-op — CSS `@page { margin: 0 }` handles Chromium/WebView2.
+            configure_print_no_headers();
+
+            // 2. Tạo cửa sổ chính từ Rust để có thể thêm initialization_script.
+            //    Script này chạy trước khi trang web load, đăng ký beforeprint/afterprint
+            //    event listeners để xóa document.title trước khi in (trên mọi nền tảng).
+            //    Điều này ngăn "Warehouse Management" xuất hiện trong print header.
+            //    Kết hợp với:
+            //      - macOS: NSPrintInfo margins = 0 (loại bỏ native headers/footers)
+            //      - Windows: CSS @page { margin: 0 } (Chromium tự loại bỏ headers/footers)
+            tauri::WebviewWindowBuilder::new(
+                app,
+                "main",
+                tauri::WebviewUrl::App("index.html".into()),
+            )
+            .title("Warehouse Management")
+            .inner_size(1200.0, 800.0)
+            .initialization_script(
+                // Minified IIFE: lưu title, xóa trước khi in, khôi phục sau khi in.
+                "(function(){var s;window.addEventListener('beforeprint',function(){s=document.title;document.title='';});window.addEventListener('afterprint',function(){if(s!==undefined)document.title=s;});})();",
+            )
+            .build()?;
+
+            Ok(())
+        })
         .manage(AppState {
             db: Mutex::new(database),
         })

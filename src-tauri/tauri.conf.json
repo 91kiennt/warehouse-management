@@ -10,13 +10,7 @@
     "frontendDist": "../dist/tauri-warehouse-management/browser"
   },
   "app": {
-    "windows": [
-      {
-        "title": "Warehouse Management",
-        "width": 800,
-        "height": 600
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }
