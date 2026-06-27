@@ -241,6 +241,10 @@ input.flatpickr-custom-input:focus {
     tfoot {
         display: none !important
     }
+
+    @page {
+        margin: 0 !important;
+    }
 }
 
 /* Default A4 print settings */
