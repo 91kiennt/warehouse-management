@@ -447,48 +447,61 @@ fn get_app_data_dir() -> PathBuf {
     proj_dirs.data_dir().to_path_buf()
 }
 
-/// macOS: Đặt NSPrintInfo.sharedPrintInfo margins = 0 ngay khi khởi động app.
-/// Khi window.print() được gọi, WKWebView sẽ đọc NSPrintInfo và không còn
-/// không gian để render native print decorations (ngày tháng, URL, tiêu đề,
-/// số trang). CSS `@page { margin: 0 }` chỉ ảnh hưởng CSS page-box layout,
-/// KHÔNG ảnh hưởng OS-level NSPrintInfo — đây là lý do CSS đơn thuần thất bại
-/// trên macOS WKWebView.
-#[cfg(target_os = "macos")]
-fn configure_print_no_headers() {
-    use objc::{class, msg_send, runtime::Object, sel, sel_impl};
-    unsafe {
-        // NSPrintInfo.sharedPrintInfo là singleton toàn cục được WKWebView sử dụng
-        // khi window.print() được gọi.
-        let print_info: *mut Object = msg_send![class!(NSPrintInfo), sharedPrintInfo];
-        if !print_info.is_null() {
-            // Đặt 4 margins = 0 → loại bỏ không gian render header/footer của WKWebView.
-            let _: () = msg_send![print_info, setTopMargin: 0.0_f64];
-            let _: () = msg_send![print_info, setBottomMargin: 0.0_f64];
-            let _: () = msg_send![print_info, setLeftMargin: 0.0_f64];
-            let _: () = msg_send![print_info, setRightMargin: 0.0_f64];
-        }
-    }
-}
-
-/// Windows: Tauri sử dụng WebView2 (Chromium-based engine) trên Windows.
-/// Khác với macOS WKWebView, WebView2/Chromium TÔN TRỌNG CSS `@page { margin: 0 }`
-/// để loại bỏ native print headers/footers. Quy tắc toàn cục này đã được đặt
-/// trong src/styles.css nên không cần gọi Windows API riêng.
+/// Windows: Vô hiệu hóa print header/footer của WebView2 (Chromium) bằng cách
+/// sửa file Preferences JSON của WebView2 trước khi nó được khởi tạo.
 ///
-/// Ngoài ra, `beforeprint`/`afterprint` JS event handlers đã được inject qua
-/// `initializationScript` trong tauri.conf.json để xóa document.title trước khi
-/// in (ngăn tiêu đề "Warehouse Management" hiển thị trong print header).
+/// Cơ chế hoạt động:
+///   Chromium/WebView2 lưu cài đặt in ấn trong file Preferences tại:
+///   `%APPDATA%\<app-identifier>\EBWebView\Default\Preferences`
+///   Key `printing.print_header_footer` = false sẽ vô hiệu hóa header/footer
+///   trong print preview dialog của Chromium.
+///
+///   Hàm này phải được gọi TRƯỚC `WebviewWindowBuilder::new()` trong setup hook
+///   để đảm bảo WebView2 đọc cài đặt đã sửa khi khởi tạo lần đầu.
 #[cfg(target_os = "windows")]
 fn configure_print_no_headers() {
-    // No-op trên Windows:
-    // - CSS `@page { margin: 0 !important }` trong src/styles.css đã xử lý Chromium.
-    // - JS beforeprint/afterprint trong tauri.conf.json initializationScript xử lý title.
-}
+    // Lấy đường dẫn tới file Preferences của WebView2.
+    // Tauri v2 lưu dữ liệu WebView2 tại %APPDATA%\<identifier>\EBWebView\.
+    let app_data = match std::env::var("APPDATA") {
+        Ok(p) => std::path::PathBuf::from(p),
+        Err(_) => return, // Không thể xác định đường dẫn, bỏ qua.
+    };
 
-/// Linux và các nền tảng khác: CSS `@page { margin: 0 }` là cách xử lý chính.
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn configure_print_no_headers() {
-    // No-op: CSS @page { margin: 0 !important } trong src/styles.css đã xử lý.
+    let prefs_path = app_data
+        .join("com.kien-19.tauri-warehouse-management") // Khớp với identifier trong tauri.conf.json
+        .join("EBWebView")
+        .join("Default")
+        .join("Preferences");
+
+    // Đọc Preferences hiện tại hoặc tạo object rỗng nếu file chưa tồn tại.
+    let mut prefs: serde_json::Value = if prefs_path.exists() {
+        std::fs::read_to_string(&prefs_path)
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_else(|| serde_json::json!({}))
+    } else {
+        serde_json::json!({})
+    };
+
+    // Đảm bảo section "printing" tồn tại, sau đó đặt print_header_footer = false.
+    // Đây là Chromium preference key chính thức kiểm soát header/footer trong print dialog.
+    if prefs.get("printing").is_none() {
+        prefs["printing"] = serde_json::json!({});
+    }
+    if let Some(printing) = prefs.get_mut("printing") {
+        printing["print_header_footer"] = serde_json::Value::Bool(false);
+    }
+
+    // Tạo thư mục cha nếu chưa tồn tại (lần chạy đầu tiên).
+    if let Some(parent) = prefs_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    // Ghi lại file Preferences. WebView2 sẽ đọc file này khi khởi tạo.
+    let _ = std::fs::write(
+        &prefs_path,
+        serde_json::to_string(&prefs).unwrap_or_default(),
+    );
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -503,18 +516,16 @@ pub fn run() {
 
     tauri::Builder::default()
         .setup(|app| {
-            // 1. Platform-specific native print configuration.
-            //    macOS: set NSPrintInfo margins = 0 to suppress WKWebView native headers/footers.
-            //    Windows/Linux: no-op — CSS `@page { margin: 0 }` handles Chromium/WebView2.
+            // Trên Windows: vô hiệu hóa Chromium print header/footer qua Preferences JSON.
+            // Phải gọi TRƯỚC WebviewWindowBuilder::new() để WebView2 đọc khi khởi tạo.
+            #[cfg(target_os = "windows")]
             configure_print_no_headers();
 
-            // 2. Tạo cửa sổ chính từ Rust để có thể thêm initialization_script.
-            //    Script này chạy trước khi trang web load, đăng ký beforeprint/afterprint
-            //    event listeners để xóa document.title trước khi in (trên mọi nền tảng).
-            //    Điều này ngăn "Warehouse Management" xuất hiện trong print header.
-            //    Kết hợp với:
-            //      - macOS: NSPrintInfo margins = 0 (loại bỏ native headers/footers)
-            //      - Windows: CSS @page { margin: 0 } (Chromium tự loại bỏ headers/footers)
+            // Tạo cửa sổ chính từ Rust để có thể thêm initialization_script.
+            // Script inject beforeprint/afterprint event listeners:
+            //   - beforeprint:  xóa document.title (ngăn tiêu đề "Warehouse Management"
+            //                   xuất hiện trong print header trên mọi nền tảng)
+            //   - afterprint:   khôi phục document.title sau khi đóng dialog in
             tauri::WebviewWindowBuilder::new(
                 app,
                 "main",
@@ -523,7 +534,6 @@ pub fn run() {
             .title("Warehouse Management")
             .inner_size(1200.0, 800.0)
             .initialization_script(
-                // Minified IIFE: lưu title, xóa trước khi in, khôi phục sau khi in.
                 "(function(){var s;window.addEventListener('beforeprint',function(){s=document.title;document.title='';});window.addEventListener('afterprint',function(){if(s!==undefined)document.title=s;});})();",
             )
             .build()?;
