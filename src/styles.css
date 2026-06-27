@@ -121,6 +121,7 @@ input.flatpickr-custom-input:focus {
 
 /* Global Print Styles */
 @media print {
+
     /* Hide layout sections globally */
     app-topbar,
     app-sidebar,
@@ -141,7 +142,8 @@ input.flatpickr-custom-input:focus {
     }
 
     /* Reset global page styles for print */
-    html, body {
+    html,
+    body {
         background: #ffffff !important;
         color: #000000 !important;
         width: 100% !important;
@@ -227,13 +229,17 @@ input.flatpickr-custom-input:focus {
     }
 
     /* Avoid page-breaks inside tables, repeat headers */
-    table, tr, td, th {
+    table,
+    tr,
+    td,
+    th {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    
-    thead {
-        display: table-header-group !important;
+
+    thead,
+    tfoot {
+        display: none !important
     }
 }
 
