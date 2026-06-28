@@ -7,6 +7,7 @@ export interface UnitSettings {
   subOrg: string;
   subOrgShort: string;
   docPrefix: string;
+  settlementWarehouse: string;
 }
 
 @Injectable({

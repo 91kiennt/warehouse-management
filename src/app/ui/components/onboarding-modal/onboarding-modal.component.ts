@@ -19,6 +19,7 @@ export class OnboardingModalComponent implements OnInit {
   subOrg: string = "";
   subOrgShort: string = "";
   docPrefix: string = "";
+  settlementWarehouse: string = "";
 
   errorMessage: string = "";
   isSaving: boolean = false;
@@ -33,12 +34,14 @@ export class OnboardingModalComponent implements OnInit {
       this.subOrg = current.subOrg || "";
       this.subOrgShort = current.subOrgShort || "";
       this.docPrefix = current.docPrefix || "";
+      this.settlementWarehouse = current.settlementWarehouse || "";
     } else {
       this.parentOrg = "BỘ TƯ LỆNH CẢNH SÁT CƠ ĐỘNG";
       this.parentOrgShort = "BỘ TƯ LỆNH CSCĐ";
       this.subOrg = "Trung tâm Huấn luyện, bồi dưỡng nghiệp vụ và giáo dục nghề nghiệp số 1";
       this.subOrgShort = "TRUNG TÂM HL, BDNV&GDNN SỐ 1";
       this.docPrefix = "BCTL-TTHL1- BCTHC";
+      this.settlementWarehouse = "TÂN BINH K62";
     }
   }
 
@@ -48,7 +51,8 @@ export class OnboardingModalComponent implements OnInit {
       !this.parentOrgShort.trim() ||
       !this.subOrg.trim() ||
       !this.subOrgShort.trim() ||
-      !this.docPrefix.trim()
+      !this.docPrefix.trim() ||
+      !this.settlementWarehouse.trim()
     ) {
       this.errorMessage = "Vui lòng nhập đầy đủ tất cả các trường thông tin bắt buộc.";
       return;
@@ -63,7 +67,8 @@ export class OnboardingModalComponent implements OnInit {
         parentOrgShort: this.parentOrgShort.trim(),
         subOrg: this.subOrg.trim(),
         subOrgShort: this.subOrgShort.trim(),
-        docPrefix: this.docPrefix.trim()
+        docPrefix: this.docPrefix.trim(),
+        settlementWarehouse: this.settlementWarehouse.trim()
       });
       this.closed.emit();
     } catch (err: any) {

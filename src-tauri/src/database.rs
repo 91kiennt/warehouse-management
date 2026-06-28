@@ -468,6 +468,8 @@ pub struct UnitSettings {
     pub sub_org_short: String,
     /// Ký hiệu / Số hiệu văn bản mặc định trên báo cáo (Ví dụ: BCTL-TTHL1- BCTHC)
     pub doc_prefix: String,
+    /// Tên kho trên báo cáo quyết toán (Ví dụ: TÂN BINH K62)
+    pub settlement_warehouse: String,
 }
 
 pub struct Database {
@@ -659,11 +661,22 @@ impl Database {
                     sub_org TEXT NOT NULL,
                     sub_org_short TEXT NOT NULL,
                     doc_prefix TEXT NOT NULL,
+                    settlement_warehouse TEXT NOT NULL DEFAULT 'TÂN BINH K62',
                     created_at TEXT NOT NULL
                 );"
             )?;
             self.conn.execute("PRAGMA user_version = 3", [])?;
             println!("[TAURI BE migrate] Database migrated to Version 3 (unit_settings table created)");
+        }
+
+        if version < 4 {
+            // Alter existing table to add settlement_warehouse column if not already present
+            let _ = self.conn.execute(
+                "ALTER TABLE unit_settings ADD COLUMN settlement_warehouse TEXT NOT NULL DEFAULT 'TÂN BINH K62'",
+                [],
+            );
+            self.conn.execute("PRAGMA user_version = 4", [])?;
+            println!("[TAURI BE migrate] Database migrated to Version 4 (added settlement_warehouse column)");
         }
 
         Ok(())
@@ -1723,7 +1736,7 @@ impl Database {
 
     pub fn get_unit_settings(&self) -> Result<Option<UnitSettings>> {
         let mut stmt = self.conn.prepare(
-            "SELECT parent_org, parent_org_short, sub_org, sub_org_short, doc_prefix FROM unit_settings LIMIT 1"
+            "SELECT parent_org, parent_org_short, sub_org, sub_org_short, doc_prefix, settlement_warehouse FROM unit_settings LIMIT 1"
         )?;
         let mut rows = stmt.query([])?;
         if let Some(row) = rows.next()? {
@@ -1733,6 +1746,7 @@ impl Database {
                 sub_org: row.get(2)?,
                 sub_org_short: row.get(3)?,
                 doc_prefix: row.get(4)?,
+                settlement_warehouse: row.get(5)?,
             }))
         } else {
             Ok(None)
@@ -1754,7 +1768,8 @@ impl Database {
                     parent_org_short = ?2, 
                     sub_org = ?3, 
                     sub_org_short = ?4, 
-                    doc_prefix = ?5 
+                    doc_prefix = ?5,
+                    settlement_warehouse = ?6
                  WHERE id = 1",
                 params![
                     settings.parent_org,
@@ -1762,6 +1777,7 @@ impl Database {
                     settings.sub_org,
                     settings.sub_org_short,
                     settings.doc_prefix,
+                    settings.settlement_warehouse,
                 ],
             )?;
         } else {
@@ -1773,14 +1789,16 @@ impl Database {
                     sub_org, 
                     sub_org_short, 
                     doc_prefix, 
+                    settlement_warehouse,
                     created_at
-                ) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6)",
+                ) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 params![
                     settings.parent_org,
                     settings.parent_org_short,
                     settings.sub_org,
                     settings.sub_org_short,
                     settings.doc_prefix,
+                    settings.settlement_warehouse,
                     created_at,
                 ],
             )?;

@@ -170,7 +170,8 @@
                         BÁO CÁO QUYẾT TOÁN
                     </h1>
                     <h2 style="font-size: 1.15rem; font-weight: bold; text-transform: uppercase; margin-top: 0;">
-                        THUỐC, VẬT TƯ TIÊU HAO TÂN BINH K62 NĂM {{ selectedYear }}
+                        THUỐC, VẬT TƯ TIÊU HAO {{ (settingsService.settings()?.settlementWarehouse || 'TÂN BINH K62') |
+                        uppercase }} NĂM {{ selectedYear }}
                     </h2>
                 </div>
 
@@ -180,8 +181,8 @@
                         <span style="font-weight: normal;">Kính gửi:</span>
                         <div
                             style="display: inline-block; vertical-align: top; margin-left: 0.5rem; font-weight: bold;">
-                            - Lãnh đạo Phòng Tài chính<br>
-                            - Lãnh đạo Phòng Y tế
+                            --------------------------<br>
+                            --------------------------
                         </div>
                     </div>
                     <p style="margin: 0.4rem 0; text-indent: 1.5rem;">
