@@ -1,6 +1,6 @@
-mod database;
+mod db;
 
-use crate::database::{
+use crate::db::{
     CustomerInput, Database, EmployeeInput, ReportData, ReportInput, SavedCustomer, SavedEmployee,
     SavedSupply, SupplyInput, MaterialInput, SavedMaterial, WarehouseReceiptInput, SavedWarehouseReceipt,
     WarehouseIssueInput, SavedWarehouseIssue, PaginatedCustomers, PaginatedSupplies, PaginatedMaterials,
