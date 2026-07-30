@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
+import { Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { UnitSettingsService } from "../../../../utils/unit-settings.service";
 
@@ -8,6 +9,7 @@ export interface ReportRow {
     isHeader: boolean;  // Dòng tổng hợp thông tin chung phiếu (nền xanh)
     isTotal: boolean;   // Dòng tổng cộng chung báo cáo (nền xám)
     index?: number;
+    id?: number;        // ID của phiếu nhập kho
     
     // Thông tin chứng từ
     receiptNumber: string;
@@ -33,6 +35,7 @@ export interface ReportRow {
 })
 export class InventoryReceiptReportComponent implements OnInit, OnDestroy {
     settingsService = inject(UnitSettingsService);
+    router = inject(Router);
 
     // Form filter properties
     selectedMonth: number = 1;
@@ -252,6 +255,7 @@ export class InventoryReceiptReportComponent implements OnInit, OnDestroy {
                 rows.push({
                     isHeader: true,
                     isTotal: false,
+                    id: r.id,
                     receiptNumber: receiptNum,
                     postingDate: postDate,
                     description: desc,
@@ -269,6 +273,7 @@ export class InventoryReceiptReportComponent implements OnInit, OnDestroy {
                     rows.push({
                         isHeader: false,
                         isTotal: false,
+                        id: r.id,
                         receiptNumber: receiptNum,
                         postingDate: postDate,
                         description: desc,
@@ -286,9 +291,15 @@ export class InventoryReceiptReportComponent implements OnInit, OnDestroy {
                 }
             }
 
-            // Assign indices
-            rows.forEach((row, i) => {
-                row.index = i + 1;
+            // Assign indices only for header rows
+            let headerCounter = 0;
+            rows.forEach((row) => {
+                if (row.isHeader) {
+                    headerCounter++;
+                    row.index = headerCounter;
+                } else {
+                    row.index = undefined;
+                }
             });
 
             // Push grand total row
@@ -296,7 +307,6 @@ export class InventoryReceiptReportComponent implements OnInit, OnDestroy {
                 rows.push({
                     isHeader: false,
                     isTotal: true,
-                    index: rows.length + 1,
                     receiptNumber: "",
                     postingDate: "",
                     description: "Tổng cộng",
@@ -321,6 +331,12 @@ export class InventoryReceiptReportComponent implements OnInit, OnDestroy {
         } catch (error) {
             this.showFeedback("Lỗi khi tải dữ liệu báo cáo.", "error");
             console.error(error);
+        }
+    }
+
+    onEditReceipt(id: number | undefined): void {
+        if (id) {
+            this.router.navigate(["/warehouse-receipts"], { queryParams: { id } });
         }
     }
 

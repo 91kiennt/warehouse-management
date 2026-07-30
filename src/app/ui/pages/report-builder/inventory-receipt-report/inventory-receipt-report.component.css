@@ -1,3 +1,15 @@
+.edit-link {
+    color: #60a5fa;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.edit-link:hover {
+    color: #3b82f6;
+}
+
 .report-container {
     display: flex;
     flex-direction: column;

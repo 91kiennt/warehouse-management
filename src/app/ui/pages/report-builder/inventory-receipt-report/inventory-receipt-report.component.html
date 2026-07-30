@@ -12,15 +12,17 @@
                     <option [ngValue]="13">Tùy chọn</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label>Từ ngày</label>
-                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')" (keyup.enter)="onDateBlur('start')" />
+                <input type="text" [(ngModel)]="startDateDisplay" (blur)="onDateBlur('start')"
+                    (keyup.enter)="onDateBlur('start')" />
             </div>
 
             <div class="form-group">
                 <label>Đến ngày</label>
-                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')" (keyup.enter)="onDateBlur('end')" />
+                <input type="text" [(ngModel)]="endDateDisplay" (blur)="onDateBlur('end')"
+                    (keyup.enter)="onDateBlur('end')" />
             </div>
 
         </div>
@@ -86,7 +88,8 @@
 
                         <!-- Header Row Style -->
                         <ng-container *ngIf="row.isHeader">
-                            <td class="center-align"><strong>{{ row.receiptNumber }}</strong></td>
+                            <td class="center-align"><span class="edit-link" (click)="onEditReceipt(row.id)">{{
+                                    row.receiptNumber }}</span></td>
                             <td class="center-align">{{ row.postingDate | date:'dd/MM/yyyy' }}</td>
                             <td><strong>{{ row.description }}</strong></td>
                             <td></td>
@@ -154,8 +157,10 @@
             <div class="print-paper-sheet" id="printable-area">
                 <div class="paper-header">
                     <div class="header-left">
-                        <div class="org-name">Đơn vị báo cáo: {{ settingsService.settings()?.subOrg || 'Công ty TNHH An Ngọc Lan' }}</div>
-                        <div class="dept-name">Địa chỉ: {{ settingsService.settings()?.parentOrg || 'Thôn Từ Dương - Xã Tô Hiệu - Huyện Thường Tín - Hà Nội' }}</div>
+                        <div class="org-name">Đơn vị báo cáo: {{ settingsService.settings()?.subOrg || 'Công ty TNHH An
+                            Ngọc Lan' }}</div>
+                        <div class="dept-name">Địa chỉ: {{ settingsService.settings()?.parentOrg || 'Thôn Từ Dương - Xã
+                            Tô Hiệu - Huyện Thường Tín - Hà Nội' }}</div>
                     </div>
                 </div>
 

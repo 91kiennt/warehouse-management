@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import * as ExcelJS from "exceljs";
 import { UnitSettingsService } from "../../../utils/unit-settings.service";
@@ -62,6 +63,8 @@ import { EnterFocusNextDirective } from "../../../utils/enter-focus-next.directi
 })
 export class WarehouseReceiptsComponent implements OnInit {
     settingsService = inject(UnitSettingsService);
+    route = inject(ActivatedRoute);
+    router = inject(Router);
 
     // Form fields
     receiptNumber = "";
@@ -117,9 +120,26 @@ export class WarehouseReceiptsComponent implements OnInit {
 
     ngOnInit(): void {
         this.resetForm();
-        this.loadMaterials();
-        this.loadReceipts();
-        this.loadSupplies();
+        this.initData();
+    }
+
+    async initData(): Promise<void> {
+        await this.loadMaterials();
+        await this.loadReceipts();
+        await this.loadSupplies();
+
+        // Check if edit id is provided in query params
+        this.route.queryParams.subscribe(params => {
+            const editId = params["id"];
+            if (editId) {
+                const match = this.receipts.find(r => r.id === Number(editId));
+                if (match) {
+                    this.selectReceipt(match);
+                } else {
+                    this.showFeedback("Không tìm thấy phiếu yêu cầu chỉnh sửa.", "error");
+                }
+            }
+        });
     }
 
     // Load master materials to auto-lookup
@@ -352,6 +372,7 @@ export class WarehouseReceiptsComponent implements OnInit {
     onAddNew(): void {
         this.resetForm();
         this.receiptNumber = this.generateReceiptNumber();
+        this.router.navigate([], { queryParams: {} });
         this.showFeedback("Mẫu nhập phiếu mới đã được thiết lập.");
     }
 
@@ -463,6 +484,7 @@ export class WarehouseReceiptsComponent implements OnInit {
             this.showFeedback("Đã xoá phiếu nhập kho thành công.");
             this.showDeleteConfirm = false;
             this.resetForm();
+            this.router.navigate([], { queryParams: {} });
             await this.loadReceipts();
         } catch (error) {
             this.showFeedback("Lỗi khi xoá phiếu nhập kho.", "error");
@@ -812,14 +834,23 @@ export class WarehouseReceiptsComponent implements OnInit {
         const row = this.items[this.activeRowIndex];
         const match = this.selectedPopupMaterial;
 
+        // Reset inputs if selecting a different material
+        if (row.materialCode && row.materialCode !== match.code) {
+            row.quantityDoc = 0;
+            row.quantityReal = 0;
+            row.price = 0;
+            row.amount = 0;
+            row.amountAfterTax = 0;
+            row.composition = "";
+        }
+
         row.materialCode = match.code;
         row.materialName = match.name;
         row.unit = match.unit;
         row.warehouse = match.warehouse;
 
         this.updateRowStockQty(this.activeRowIndex);
-
-        this.checkAndAppendRow(this.activeRowIndex);
+        this.calculateAmounts(this.activeRowIndex);
 
         this.showMaterialModal = false;
         this.focusNextInputAfterSelect();
@@ -1015,9 +1046,20 @@ export class WarehouseReceiptsComponent implements OnInit {
     confirmSelectWarehouse(): void {
         if (!this.selectedPopupSupply || this.activeWarehouseRowIndex === null) return;
         const row = this.items[this.activeWarehouseRowIndex];
+
+        // Reset inputs if selecting a different warehouse
+        if (row.warehouse && row.warehouse !== this.selectedPopupSupply.code) {
+            row.quantityDoc = 0;
+            row.quantityReal = 0;
+            row.price = 0;
+            row.amount = 0;
+            row.amountAfterTax = 0;
+        }
+
         row.warehouse = this.selectedPopupSupply.code;
 
         this.updateRowStockQty(this.activeWarehouseRowIndex);
+        this.calculateAmounts(this.activeWarehouseRowIndex);
 
         this.showWarehouseModal = false;
         this.focusNextInputAfterWarehouseSelect();
