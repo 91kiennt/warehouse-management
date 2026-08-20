@@ -282,4 +282,111 @@ impl Database {
 
         Ok(total_in - total_out)
     }
+
+    /// Import hàng loạt vật tư từ Excel với 4 lớp tối ưu hiệu năng:
+    /// 1. INSERT OR REPLACE thay vì SELECT EXISTS + UPDATE/INSERT (giảm 50% số query)
+    /// 2. Prepared Statement compile SQL 1 lần/chunk
+    /// 3. WAL + PRAGMA đã được bật ở migration v5
+    /// 4. HashSet warehouse validation O(1) + chunked processing với progress event
+    pub fn import_materials_optimized(
+        &mut self,
+        app_handle: &tauri::AppHandle,
+        items: Vec<MaterialInput>,
+    ) -> Result<String, String> {
+        use std::collections::HashSet;
+        use tauri::Emitter;
+
+        let now = chrono::Utc::now().to_rfc3339();
+        let total = items.len();
+
+        if total == 0 {
+            return Ok("Không có dữ liệu để import.".to_string());
+        }
+
+        // ── Tối ưu 4: Load tất cả warehouse codes hợp lệ vào HashSet — 1 query duy nhất ──
+        let valid_warehouses: HashSet<String> = {
+            let mut stmt = self
+                .conn
+                .prepare("SELECT code FROM supplies")
+                .map_err(|e| e.to_string())?;
+            // Collect vào Vec trước để stmt có thể drop trước khi block kết thúc
+            let rows: Vec<String> = stmt
+                .query_map([], |row| row.get::<_, String>(0))
+                .map_err(|e| e.to_string())?
+                .filter_map(|r| r.ok())
+                .collect();
+            rows.into_iter().collect()
+        };
+
+        // Validate tất cả warehouse trước khi bắt đầu bất kỳ transaction nào
+        for (idx, item) in items.iter().enumerate() {
+            if !valid_warehouses.contains(&item.warehouse) {
+                return Err(format!(
+                    "Dòng {}: Mã kho '{}' không tồn tại trong hệ thống.",
+                    idx + 2, // +2 vì dòng 1 là header
+                    item.warehouse
+                ));
+            }
+        }
+
+        // ── Xử lý theo chunk 500 dòng, mỗi chunk là 1 transaction ──────────────────────
+        const CHUNK_SIZE: usize = 500;
+
+        for (chunk_idx, chunk) in items.chunks(CHUNK_SIZE).enumerate() {
+            let tx = self.conn.transaction().map_err(|e| e.to_string())?;
+
+            {
+                // ── Tối ưu 2: Prepared Statement — compile SQL 1 lần cho cả chunk ──
+                // ── Tối ưu 1: INSERT OR REPLACE — không cần SELECT EXISTS ───────────
+                let mut stmt = tx
+                    .prepare(
+                        "INSERT OR REPLACE INTO materials
+                         (code, barcode, name, parent_code, parent_name, unit, currency,
+                          warehouse, valuation_method, features, taxable, mrp_mps,
+                          calculate_inventory, start_date, end_date, image_data, created_at)
+                         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)",
+                    )
+                    .map_err(|e| e.to_string())?;
+
+                for item in chunk.iter() {
+                    stmt.execute(rusqlite::params![
+                        item.code,
+                        item.barcode,
+                        item.name,
+                        item.parent_code,
+                        item.parent_name,
+                        item.unit,
+                        item.currency,
+                        item.warehouse,
+                        item.valuation_method,
+                        item.features,
+                        item.taxable,
+                        item.mrp_mps,
+                        item.calculate_inventory,
+                        item.start_date,
+                        item.end_date,
+                        item.image_data,
+                        now
+                    ])
+                    .map_err(|e| e.to_string())?;
+                }
+            } // stmt dropped ở đây — bắt buộc trước khi gọi tx.commit()
+
+            tx.commit().map_err(|e| e.to_string())?;
+
+            // ── Tối ưu 4: Emit progress event sau mỗi chunk ─────────────────────────
+            let processed = ((chunk_idx + 1) * CHUNK_SIZE).min(total);
+            let percent = (processed as f64 / total as f64 * 100.0) as u32;
+            let _ = app_handle.emit(
+                "import_materials_progress",
+                serde_json::json!({
+                    "processed": processed,
+                    "total": total,
+                    "percent": percent,
+                }),
+            );
+        }
+
+        Ok(format!("Import thành công {} vật tư.", total))
+    }
 }

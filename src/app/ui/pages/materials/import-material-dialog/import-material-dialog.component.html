@@ -1,0 +1,111 @@
+<div class="dialog-backdrop" (click)="onCancel()">
+  <div class="dialog-container" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="dialog-header">
+      <div class="header-title-group">
+        <span class="header-icon">📥</span>
+        <h3 class="dialog-title">Nhập mẫu vật tư hàng hoá</h3>
+      </div>
+      <button class="btn-close" (click)="onCancel()" [disabled]="isImporting" title="Đóng">&#x2715;</button>
+    </div>
+
+    <!-- Body -->
+    <div class="dialog-body">
+      <!-- Loading overlay state khi đang import -->
+      <div class="importing-overlay" *ngIf="isImporting">
+        <div class="import-spinner"></div>
+        <h4 class="importing-title">Đang import dữ liệu...</h4>
+        <p class="importing-subtitle">Hệ thống đang kiểm tra và lưu dữ liệu vào cơ sở dữ liệu</p>
+        
+        <!-- Progress bar -->
+        <div class="progress-wrapper">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="importProgress"></div>
+          </div>
+          <div class="progress-status">
+            <span>Tiến độ</span>
+            <span class="progress-percent">{{ importProgress }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dropzone (ẩn khi đang import để hiển thị loading chuyên nghiệp) -->
+      <div
+        *ngIf="!isImporting"
+        class="drop-zone"
+        [class.drag-over]="isDragOver"
+        [class.state-validating]="validationStatus === 'validating'"
+        [class.state-error]="validationStatus === 'error-format' || validationStatus === 'error-columns'"
+        [class.state-ready]="validationStatus === 'ready'"
+        (dragover)="onDragOver($event)"
+        (dragleave)="isDragOver = false"
+        (drop)="onDrop($event)"
+        (click)="fileInput.click()"
+      >
+        <input
+          #fileInput
+          type="file"
+          accept=".xlsx,.xls"
+          style="display: none"
+          (change)="onFileSelected($event)"
+        />
+
+        <!-- Trạng thái: Idle — chưa chọn file -->
+        <ng-container *ngIf="validationStatus === 'idle'">
+          <div class="drop-icon-box idle">
+            <span class="drop-icon">📁</span>
+          </div>
+          <p class="drop-title">Chọn tệp hoặc kéo và thả tệp vào đây</p>
+          <p class="drop-hint">Hỗ trợ định dạng .xlsx, .xls (tối đa 20MB)</p>
+        </ng-container>
+
+        <!-- Trạng thái: Đang validate -->
+        <ng-container *ngIf="validationStatus === 'validating'">
+          <div class="drop-icon-box validating">
+            <div class="small-spinner"></div>
+          </div>
+          <p class="drop-title validating-text">Đang kiểm tra cấu trúc file...</p>
+          <p class="drop-hint">Vui lòng đợi trong giây lát</p>
+        </ng-container>
+
+        <!-- Trạng thái: Lỗi -->
+        <ng-container *ngIf="validationStatus === 'error-format' || validationStatus === 'error-columns'">
+          <div class="drop-icon-box error">
+            <span class="drop-icon">❌</span>
+          </div>
+          <p class="drop-filename">📄 {{ selectedFile?.name }}</p>
+          <p class="drop-error">{{ fileError }}</p>
+          <p class="drop-action-hint">Nhấn vào đây để chọn lại file khác</p>
+        </ng-container>
+
+        <!-- Trạng thái: Hợp lệ -->
+        <ng-container *ngIf="validationStatus === 'ready'">
+          <div class="drop-icon-box ready">
+            <span class="drop-icon">✅</span>
+          </div>
+          <p class="drop-filename">📄 {{ selectedFile?.name }}</p>
+          <p class="drop-success">File hợp lệ, sẵn sàng để import</p>
+          <p class="drop-action-hint">Nhấn vào đây nếu muốn đổi file khác</p>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="dialog-footer">
+      <button type="button" class="btn-dialog-cancel" (click)="onCancel()" [disabled]="isImporting">
+        Huỷ
+      </button>
+      <button
+        type="button"
+        class="btn-dialog-confirm"
+        [disabled]="validationStatus !== 'ready' || isImporting"
+        (click)="onConfirm()"
+      >
+        <span class="btn-spinner" *ngIf="isImporting"></span>
+        <span>{{ isImporting ? 'Đang xử lý...' : 'Xác nhận' }}</span>
+      </button>
+    </div>
+
+  </div>
+</div>

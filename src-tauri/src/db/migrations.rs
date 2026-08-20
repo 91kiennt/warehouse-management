@@ -197,5 +197,23 @@ pub fn migrate(conn: &Connection) -> Result<()> {
         println!("[TAURI BE migrate] Database migrated to Version 4 (added settlement_warehouse column)");
     }
 
+    if version < 5 {
+        // Tạo UNIQUE index trên cột code của bảng materials.
+        // Đây là yêu cầu bắt buộc để INSERT OR REPLACE hoạt động đúng trong import batch.
+        conn.execute_batch(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_materials_code ON materials(code);"
+        )?;
+
+        // Bật WAL mode và tối ưu I/O cho toàn bộ DB (áp dụng vĩnh viễn cho file này).
+        conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+             PRAGMA synchronous=NORMAL;
+             PRAGMA cache_size=-64000;"
+        )?;
+
+        conn.execute("PRAGMA user_version = 5", [])?;
+        println!("[TAURI BE migrate] Database migrated to Version 5 (UNIQUE index on materials.code + WAL mode enabled)");
+    }
+
     Ok(())
 }

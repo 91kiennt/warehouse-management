@@ -249,6 +249,16 @@ fn delete_material(state: tauri::State<'_, AppState>, id: i64) -> Result<(), Str
 }
 
 #[tauri::command]
+fn import_materials_batch(
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    items: Vec<MaterialInput>,
+) -> Result<String, String> {
+    let mut db = state.db.lock().map_err(|e| e.to_string())?;
+    db.import_materials_optimized(&app_handle, items)
+}
+
+#[tauri::command]
 fn save_warehouse_receipt(
     state: tauri::State<'_, AppState>,
     receipt: WarehouseReceiptInput,
@@ -565,6 +575,7 @@ pub fn run() {
             list_materials_paginated,
             update_material,
             delete_material,
+            import_materials_batch,
             save_warehouse_receipt,
             list_warehouse_receipts,
             update_warehouse_receipt,

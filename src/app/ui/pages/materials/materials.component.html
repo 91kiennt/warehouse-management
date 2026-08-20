@@ -200,7 +200,14 @@
     <!-- Thanh thao tác dưới cùng (Footer Action Bar) -->
     <footer class="footer-action-bar">
         <div class="left-actions">
-            <!-- <button type="button" class="print-btn" (click)="onPrint()">In</button> -->
+            <button type="button" class="btn-excel-template" (click)="downloadExcelTemplate()">
+                <span class="btn-icon">📥</span>
+                <span>Excel Mẫu</span>
+            </button>
+            <button type="button" class="btn-import" (click)="openImportDialog()">
+                <span class="btn-icon">📊</span>
+                <span>Import dữ liệu</span>
+            </button>
         </div>
         <div class="right-actions">
             <button type="button" class="success" (click)="onAddNew()">Thêm</button>
@@ -222,4 +229,12 @@
             </div>
         </div>
     </div>
+
+    <!-- Dialog Import dữ liệu Excel -->
+    <app-import-material-dialog
+        *ngIf="showImportDialog"
+        (closed)="onImportDialogClosed()"
+        (importSuccess)="onImportSuccess($event)">
+    </app-import-material-dialog>
+
 </section>

@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { invoke } from "@tauri-apps/api/core";
+import { ImportMaterialDialogComponent } from "./import-material-dialog/import-material-dialog.component";
 
 interface MaterialForm {
     code: string;
@@ -55,7 +56,7 @@ import { EnterFocusNextDirective } from "../../../utils/enter-focus-next.directi
 @Component({
     standalone: true,
     selector: "app-materials",
-    imports: [CommonModule, FormsModule, FlatpickrDirective, EnterFocusNextDirective],
+    imports: [CommonModule, FormsModule, FlatpickrDirective, EnterFocusNextDirective, ImportMaterialDialogComponent],
     templateUrl: "./materials.component.html",
     styleUrls: ["./materials.component.css"],
 })
@@ -64,6 +65,7 @@ export class MaterialsComponent implements OnInit {
     supplies: SavedSupply[] = [];
     selectedMaterialId: number | null = null;
     showDeleteConfirm = false;
+    showImportDialog = false;
     deletingMaterial: SavedMaterial | null = null;
     message = "";
     messageType: "success" | "error" = "success";
@@ -188,6 +190,43 @@ export class MaterialsComponent implements OnInit {
 
     onCodeChange(val: string): void {
         this.materialForm.barcode = val;
+    }
+
+    /** Tải xuống file Excel mẫu với 6 cột chuẩn */
+    downloadExcelTemplate(): void {
+        import("xlsx")
+            .then((XLSX) => {
+                const templateData = [
+                    { STT: 1, "Tên kho": "KHO01", "Mã vật tư": "VT001", "Tên vật tư": "Thép tấm A36", "Đơn vị tính": "Tấn", "Đặc tính": "" },
+                    { STT: 2, "Tên kho": "KHO01", "Mã vật tư": "VT002", "Tên vật tư": "Bu lông M12", "Đơn vị tính": "Cái", "Đặc tính": "" },
+                ];
+                const ws = XLSX.utils.json_to_sheet(templateData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Vật Tư");
+                XLSX.writeFile(wb, "vat-tu-mau.xlsx");
+                this.showFeedback("Tải xuống file Excel mẫu thành công!", "success");
+            })
+            .catch((error) => {
+                console.error("Lỗi tải file mẫu:", error);
+                this.showFeedback("Không thể tải file mẫu Excel.", "error");
+            });
+    }
+
+    /** Mở popup import dữ liệu */
+    openImportDialog(): void {
+        this.showImportDialog = true;
+    }
+
+    /** Callback khi import thành công */
+    onImportSuccess(message: string): void {
+        this.showImportDialog = false;
+        this.showFeedback(message || "Import dữ liệu vào database thành công!", "success");
+        this.loadMaterials();
+    }
+
+    /** Callback khi đóng popup import */
+    onImportDialogClosed(): void {
+        this.showImportDialog = false;
     }
 
     onAddNew(): void {
