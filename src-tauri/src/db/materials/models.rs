@@ -35,6 +35,9 @@ pub struct MaterialInput {
     pub end_date: String,
     /// Chuỗi dữ liệu ảnh đại diện (Định dạng Base64)
     pub image_data: String,
+    /// Số lượng tồn đầu kỳ (Tùy chọn, dùng khi import từ Excel)
+    #[serde(default)]
+    pub opening_stock: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

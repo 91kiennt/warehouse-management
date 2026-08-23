@@ -288,6 +288,11 @@ impl Database {
     /// 2. Prepared Statement compile SQL 1 lần/chunk
     /// 3. WAL + PRAGMA đã được bật ở migration v5
     /// 4. HashSet warehouse validation O(1) + chunked processing với progress event
+    /// Import hàng loạt vật tư từ Excel với 4 lớp tối ưu hiệu năng:
+    /// 1. INSERT OR REPLACE thay vì SELECT EXISTS + UPDATE/INSERT (giảm 50% số query)
+    /// 2. Prepared Statement compile SQL 1 lần/chunk
+    /// 3. WAL + PRAGMA đã được bật ở migration v5
+    /// 4. HashSet warehouse validation O(1) + Master Receipt merge cho tồn kho đầu kỳ
     pub fn import_materials_optimized(
         &mut self,
         app_handle: &tauri::AppHandle,
@@ -318,26 +323,40 @@ impl Database {
             rows.into_iter().collect()
         };
 
-        // Validate tất cả warehouse trước khi bắt đầu bất kỳ transaction nào
+        // Validate tất cả dữ liệu trước khi bắt đầu bất kỳ transaction nào
         for (idx, item) in items.iter().enumerate() {
+            let row_num = idx + 2; // +2 vì dòng 1 là header Excel
+
+            if item.code.trim().is_empty() {
+                return Err(format!("Dòng {}: Mã vật tư không được để trống.", row_num));
+            }
+
             if !valid_warehouses.contains(&item.warehouse) {
                 return Err(format!(
                     "Dòng {}: Mã kho '{}' không tồn tại trong hệ thống.",
-                    idx + 2, // +2 vì dòng 1 là header
-                    item.warehouse
+                    row_num, item.warehouse
                 ));
+            }
+
+            if let Some(stock) = item.opening_stock {
+                if stock < 0.0 {
+                    return Err(format!(
+                        "Dòng {}: Số lượng tồn không được là số âm (giá trị: {}).",
+                        row_num, stock
+                    ));
+                }
             }
         }
 
-        // ── Xử lý theo chunk 500 dòng, mỗi chunk là 1 transaction ──────────────────────
+        // ── Phase 1: Upsert Materials (10% → 60%) ────────────────────────────────────
         const CHUNK_SIZE: usize = 500;
+        let num_chunks = (total + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
         for (chunk_idx, chunk) in items.chunks(CHUNK_SIZE).enumerate() {
             let tx = self.conn.transaction().map_err(|e| e.to_string())?;
 
             {
-                // ── Tối ưu 2: Prepared Statement — compile SQL 1 lần cho cả chunk ──
-                // ── Tối ưu 1: INSERT OR REPLACE — không cần SELECT EXISTS ───────────
+                // Prepared Statement — compile SQL 1 lần cho cả chunk
                 let mut stmt = tx
                     .prepare(
                         "INSERT OR REPLACE INTO materials
@@ -370,23 +389,195 @@ impl Database {
                     ])
                     .map_err(|e| e.to_string())?;
                 }
-            } // stmt dropped ở đây — bắt buộc trước khi gọi tx.commit()
+            } // stmt dropped trước khi commit
 
             tx.commit().map_err(|e| e.to_string())?;
 
-            // ── Tối ưu 4: Emit progress event sau mỗi chunk ─────────────────────────
-            let processed = ((chunk_idx + 1) * CHUNK_SIZE).min(total);
-            let percent = (processed as f64 / total as f64 * 100.0) as u32;
+            // Emit progress cho Phase 1: từ 10% đến 60%
+            let progress_percent = 10 + (((chunk_idx + 1) as f64 / num_chunks as f64) * 50.0) as u32;
             let _ = app_handle.emit(
                 "import_materials_progress",
                 serde_json::json!({
-                    "processed": processed,
+                    "processed": ((chunk_idx + 1) * CHUNK_SIZE).min(total),
                     "total": total,
-                    "percent": percent,
+                    "percent": progress_percent.min(60),
                 }),
             );
         }
 
-        Ok(format!("Import thành công {} vật tư.", total))
+        // ── Phase 2: Merge Phiếu Tồn Đầu Kỳ Master (60% → 90%) ───────────────────────
+        #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+        #[serde(rename_all = "camelCase")]
+        struct ReceiptItemDto {
+            pub warehouse: String,
+            pub material_code: String,
+            pub material_name: String,
+            pub unit: String,
+            #[serde(default)]
+            pub stock_qty: f64,
+            #[serde(default)]
+            pub quantity_doc: f64,
+            #[serde(default)]
+            pub quantity_real: f64,
+            #[serde(default)]
+            pub price: f64,
+            #[serde(default)]
+            pub amount: f64,
+            #[serde(default)]
+            pub amount_after_tax: f64,
+            #[serde(default)]
+            pub composition: String,
+        }
+
+        let stock_items: Vec<&MaterialInput> = items
+            .iter()
+            .filter(|i| i.opening_stock.unwrap_or(0.0) > 0.0)
+            .collect();
+
+        let stock_count = stock_items.len();
+
+        if stock_count > 0 {
+            let _ = app_handle.emit(
+                "import_materials_progress",
+                serde_json::json!({
+                    "processed": total,
+                    "total": total,
+                    "percent": 75,
+                }),
+            );
+
+            // Kiểm tra xem đã có phiếu Master "Tồn đầu kỳ" trong hệ thống chưa
+            let existing_receipt: Option<(i64, String)> = self
+                .conn
+                .query_row(
+                    "SELECT id, items FROM warehouse_receipts WHERE reason = 'Tồn đầu kỳ' LIMIT 1",
+                    [],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .ok();
+
+            if let Some((existing_id, items_json_str)) = existing_receipt {
+                // Đã có phiếu Master → Deserialize và Merge
+                let mut receipt_items: Vec<ReceiptItemDto> =
+                    serde_json::from_str(&items_json_str).unwrap_or_default();
+
+                for item in stock_items.iter() {
+                    let stock = item.opening_stock.unwrap_or(0.0);
+                    if let Some(existing_entry) = receipt_items.iter_mut().find(|e| {
+                        e.material_code.eq_ignore_ascii_case(&item.code)
+                            && e.warehouse.eq_ignore_ascii_case(&item.warehouse)
+                    }) {
+                        // Case 3: Cập nhật số lượng tồn trong phiếu Master
+                        existing_entry.quantity_real = stock;
+                        existing_entry.quantity_doc = stock;
+                        existing_entry.material_name = item.name.clone();
+                        existing_entry.unit = item.unit.clone();
+                    } else {
+                        // Case 1: Thêm dòng mới vào phiếu Master
+                        receipt_items.push(ReceiptItemDto {
+                            warehouse: item.warehouse.clone(),
+                            material_code: item.code.clone(),
+                            material_name: item.name.clone(),
+                            unit: item.unit.clone(),
+                            stock_qty: 0.0,
+                            quantity_doc: stock,
+                            quantity_real: stock,
+                            price: 0.0,
+                            amount: 0.0,
+                            amount_after_tax: 0.0,
+                            composition: String::new(),
+                        });
+                    }
+                }
+
+                let updated_items_json =
+                    serde_json::to_string(&receipt_items).map_err(|e| e.to_string())?;
+
+                self.conn
+                    .execute(
+                        "UPDATE warehouse_receipts SET items = ?1 WHERE id = ?2",
+                        rusqlite::params![updated_items_json, existing_id],
+                    )
+                    .map_err(|e| e.to_string())?;
+            } else {
+                // Chưa có phiếu Master → Tạo phiếu nhập đầu kỳ mới
+                let receipt_items: Vec<ReceiptItemDto> = stock_items
+                    .iter()
+                    .map(|item| {
+                        let stock = item.opening_stock.unwrap_or(0.0);
+                        ReceiptItemDto {
+                            warehouse: item.warehouse.clone(),
+                            material_code: item.code.clone(),
+                            material_name: item.name.clone(),
+                            unit: item.unit.clone(),
+                            stock_qty: 0.0,
+                            quantity_doc: stock,
+                            quantity_real: stock,
+                            price: 0.0,
+                            amount: 0.0,
+                            amount_after_tax: 0.0,
+                            composition: String::new(),
+                        }
+                    })
+                    .collect();
+
+                let items_json =
+                    serde_json::to_string(&receipt_items).map_err(|e| e.to_string())?;
+                let receipt_num = format!("DK-{}", chrono::Local::now().format("%Y%m%d%H%M%S"));
+                let posting_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+                self.conn
+                    .execute(
+                        "INSERT INTO warehouse_receipts (
+                            receipt_number,
+                            posting_date,
+                            invoice_number,
+                            invoice_date,
+                            description,
+                            delivery_person,
+                            accompanied_doc,
+                            department,
+                            reason,
+                            warehouse_location,
+                            items,
+                            created_at
+                        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                        rusqlite::params![
+                            receipt_num,
+                            posting_date,
+                            "",
+                            posting_date,
+                            "Nhập tồn kho đầu kỳ - Import từ Excel",
+                            "",
+                            "",
+                            "",
+                            "Tồn đầu kỳ",
+                            "",
+                            items_json,
+                            now,
+                        ],
+                    )
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+
+        // ── Hoàn tất (100%) ─────────────────────────────────────────────────────────
+        let _ = app_handle.emit(
+            "import_materials_progress",
+            serde_json::json!({
+                "processed": total,
+                "total": total,
+                "percent": 100,
+            }),
+        );
+
+        if stock_count > 0 {
+            Ok(format!(
+                "Import thành công {} vật tư. Đã cập nhật phiếu tồn đầu kỳ ({} vật tư có số lượng tồn).",
+                total, stock_count
+            ))
+        } else {
+            Ok(format!("Import thành công {} vật tư.", total))
+        }
     }
 }
