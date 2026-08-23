@@ -192,13 +192,31 @@ export class MaterialsComponent implements OnInit {
         this.materialForm.barcode = val;
     }
 
-    /** Tải xuống file Excel mẫu với 6 cột chuẩn */
+    /** Tải xuống file Excel mẫu với các cột chuẩn */
     downloadExcelTemplate(): void {
         import("xlsx")
             .then((XLSX) => {
                 const templateData = [
-                    { STT: 1, "Tên kho": "KHO01", "Mã vật tư": "VT001", "Tên vật tư": "Thép tấm A36", "Đơn vị tính": "Tấn", "Đặc tính": "" },
-                    { STT: 2, "Tên kho": "KHO01", "Mã vật tư": "VT002", "Tên vật tư": "Bu lông M12", "Đơn vị tính": "Cái", "Đặc tính": "" },
+                    {
+                        STT: 1,
+                        "Tên kho": "Kho Tân Bình",
+                        "Mã kho": "KHO01",
+                        "Mã vật tư": "VT001",
+                        "Tên vật tư": "Thép tấm A36",
+                        "Đơn vị tính": "Tấn",
+                        "Đặc tính": "Dày 10mm",
+                        "Số lượng tồn": 50,
+                    },
+                    {
+                        STT: 2,
+                        "Tên kho": "Kho Tân Bình",
+                        "Mã kho": "KHO01",
+                        "Mã vật tư": "VT002",
+                        "Tên vật tư": "Bu lông M12",
+                        "Đơn vị tính": "Cái",
+                        "Đặc tính": "",
+                        "Số lượng tồn": 0,
+                    },
                 ];
                 const ws = XLSX.utils.json_to_sheet(templateData);
                 const wb = XLSX.utils.book_new();
@@ -372,11 +390,11 @@ export class MaterialsComponent implements OnInit {
     async onPrint(): Promise<void> {
         console.log("In danh sách vật tư...");
         this.showFeedback("Đang khởi tạo lệnh in...");
-        
+
         try {
             // Stub function for printer connection library integration
             this.printerIntegrationStub();
-            
+
             // Backup/Default option: native browser printing
             window.print();
         } catch (err) {

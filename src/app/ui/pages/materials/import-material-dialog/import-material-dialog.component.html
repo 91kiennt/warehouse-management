@@ -89,6 +89,14 @@
           <p class="drop-action-hint">Nhấn vào đây nếu muốn đổi file khác</p>
         </ng-container>
       </div>
+
+      <!-- Ghi chú hướng dẫn -->
+      <div class="dialog-tips" *ngIf="!isImporting">
+        <span class="tip-icon">💡</span>
+        <span class="tip-text">
+          Cột <strong>Mã kho</strong> cần khớp với kho trong hệ thống. Cột <strong>Số lượng tồn</strong> (tùy chọn) để nạp số dư đầu kỳ.
+        </span>
+      </div>
     </div>
 
     <!-- Footer -->

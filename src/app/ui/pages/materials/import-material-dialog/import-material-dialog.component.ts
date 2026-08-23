@@ -18,9 +18,11 @@ type ValidationStatus =
     | "ready";          // Hợp lệ, cho phép import
 
 /** Danh sách cột bắt buộc — khớp chính xác với file mẫu */
+/** Danh sách cột bắt buộc — khớp chính xác với file mẫu */
 const REQUIRED_COLUMNS: readonly string[] = [
     "STT",
     "Tên kho",
+    "Mã kho",
     "Mã vật tư",
     "Tên vật tư",
     "Đơn vị tính",
@@ -53,6 +55,7 @@ interface MaterialImportRow {
     startDate: string;
     endDate: string;
     imageData: string;
+    openingStock?: number;
 }
 
 @Component({
@@ -233,26 +236,40 @@ export class ImportMaterialDialogComponent implements OnInit, OnDestroy {
                         XLSX.utils.sheet_to_json(ws);
                     const today = new Date().toISOString().slice(0, 10);
 
-                    const items: MaterialImportRow[] = rows.map((row) => ({
-                        // ── Cột lấy từ Excel ──────────────────────────────
-                        code: String(row["Mã vật tư"] ?? "").trim(),
-                        name: String(row["Tên vật tư"] ?? "").trim(),
-                        unit: String(row["Đơn vị tính"] ?? "").trim(),
-                        warehouse: String(row["Tên kho"] ?? "").trim(),
-                        features: String(row["Đặc tính"] ?? "").trim(),
-                        // ── Mặc định cứng — không lấy từ Excel ───────────
-                        barcode: "",
-                        parentCode: "",
-                        parentName: "",
-                        currency: "VND",
-                        valuationMethod: "FIFO",
-                        taxable: "true",
-                        mrpMps: 0,
-                        calculateInventory: 1,
-                        startDate: today,
-                        endDate: "",
-                        imageData: "",
-                    }));
+                    const items: MaterialImportRow[] = rows.map((row) => {
+                        const rawStock = row["Số lượng tồn"];
+                        const openingStock =
+                            rawStock !== undefined &&
+                            rawStock !== null &&
+                            String(rawStock).trim() !== ""
+                                ? Number(rawStock)
+                                : undefined;
+
+                        return {
+                            // ── Cột lấy từ Excel ──────────────────────────────
+                            code: String(row["Mã vật tư"] ?? "").trim(),
+                            name: String(row["Tên vật tư"] ?? "").trim(),
+                            unit: String(row["Đơn vị tính"] ?? "").trim(),
+                            warehouse: String(row["Mã kho"] ?? "").trim(),
+                            features: String(row["Đặc tính"] ?? "").trim(),
+                            openingStock:
+                                openingStock !== undefined && !isNaN(openingStock)
+                                    ? openingStock
+                                    : undefined,
+                            // ── Mặc định cứng — không lấy từ Excel ───────────
+                            barcode: "",
+                            parentCode: "",
+                            parentName: "",
+                            currency: "VND",
+                            valuationMethod: "FIFO",
+                            taxable: "true",
+                            mrpMps: 0,
+                            calculateInventory: 1,
+                            startDate: today,
+                            endDate: "",
+                            imageData: "",
+                        };
+                    });
                     resolve(items);
                 } catch {
                     reject("Không thể đọc nội dung file Excel.");
@@ -284,19 +301,23 @@ export class ImportMaterialDialogComponent implements OnInit, OnDestroy {
         const templateData = [
             {
                 STT: 1,
-                "Tên kho": "KHO01",
+                "Tên kho": "Kho Tân Bình",
+                "Mã kho": "KHO01",
                 "Mã vật tư": "VT001",
                 "Tên vật tư": "Thép tấm A36",
                 "Đơn vị tính": "Tấn",
-                "Đặc tính": "",
+                "Đặc tính": "Dày 10mm",
+                "Số lượng tồn": 50,
             },
             {
                 STT: 2,
-                "Tên kho": "KHO01",
+                "Tên kho": "Kho Tân Bình",
+                "Mã kho": "KHO01",
                 "Mã vật tư": "VT002",
                 "Tên vật tư": "Bu lông M12",
                 "Đơn vị tính": "Cái",
                 "Đặc tính": "",
+                "Số lượng tồn": 0,
             },
         ];
 

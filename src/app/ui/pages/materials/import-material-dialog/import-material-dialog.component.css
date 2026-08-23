@@ -354,3 +354,28 @@
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+
+/* ── Tips Box ────────────────────────────────────────────────────────────── */
+.dialog-tips {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 0.65rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #94a3b8;
+}
+
+.dialog-tips strong {
+    color: #cbd5e1;
+}
+
+.tip-icon {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
